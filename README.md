@@ -7,9 +7,13 @@ This project mainly help to upload images to some hosting services like Picasa, 
 * Version:    5.0 stateble
 
 ### Demo
-- http://ptcong.com/imageuploader5 (version 5.1 - PAID - $10)
-- Version 5.1 include user interface and Flickr plugin and more features, improved. Contact me via email above to get it.
+- http://ptcong.com/imageuploader5 (version 5.1.x - PAID - $10)
+- Version 5.1.x include user interface and Flickr plugin and more features, improved. 
 
+### Purchase
+* Upload tools: http://ptcong.com/?p=10 (PAID - $10)
+* XenForo add-on: http://ptcong.com/?p=23 (PAID - $10)
+After purchased, you will emails for new version if the item have updated.
 
 ## Change Logs
 
