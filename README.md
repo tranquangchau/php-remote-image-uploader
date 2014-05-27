@@ -13,7 +13,8 @@ This project mainly help to upload images to some hosting services like Picasa, 
 ### Purchase
 * Upload tools: http://ptcong.com/?p=10 (PAID - $10)
 * XenForo add-on: http://ptcong.com/?p=23 (PAID - $10)
-After purchased, you will emails for new version if the item have updated.
+
+- After purchased, you will emails for new version if the item have updated.
 
 ## Change Logs
 
