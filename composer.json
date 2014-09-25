@@ -3,13 +3,11 @@
     "description": "Library for uploading image to picasa, imageshack, imgur, postimage etc...",
     "keywords": ["php", "image uploader", "remote image upload"],
     "license": "MIT",
-    "authors": [
-        {
-            "name": "Phan Thanh Cong",
-            "email": "ptcong90@gmail.com",
-            "homepage": "http://ptcong.com"
-        }
-    ],
+    "authors": [{
+        "name": "Phan Thanh Cong",
+        "email": "ptcong90@gmail.com",
+        "homepage": "http://ptcong.com"
+    }],
     "require": {
         "php": ">=5.0",
         "ptcong/php-chipvn-classloader": "dev-master",
@@ -17,8 +15,10 @@
         "ptcong/php-cache-manager": "dev-master"
     },
     "autoload": {
-        "classmap": ["ChipVN/ImageUploader"]
+        "psr-0": {
+            "ChipVN_": "/"
+        }
     },
     "target-dir": "ChipVN/ImageUploader",
-    "minimum-stability" : "dev"
+    "minimum-stability": "dev"
 }
