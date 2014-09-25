@@ -54,7 +54,7 @@ The library is free, but if you need an add-on for xenforo or web tools to uploa
 
 ## Usage
 ###### If you use composer
-Add require `"ptcong/php-image-uploader": "dev-master"` to _composer.json_ and run `composer update`, if you catch the issue about stability, should add `"minimum-stability" : "dev"` to your `composer.json`
+Add require `"ptcong/php-image-uploader": "dev-master"` to _composer.json_ and run `composer update`, if you catch an issue about stability, should add `"minimum-stability" : "dev"` to your `composer.json`
 
 ###### If you don't use composer
 Download
