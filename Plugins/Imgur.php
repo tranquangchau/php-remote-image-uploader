@@ -10,24 +10,24 @@ class ChipVN_ImageUploader_Plugins_Imgur extends ChipVN_ImageUploader_Plugins_Ab
      */
     protected function doLogin()
     {
-        if (!$this->get('sessionLogin')) {
-            $this->request->reset();
-            $this->request->execute('https://imgur.com/signin', 'POST', array(
-                'username' => $this->username,
-                'password' => $this->password,
-                'submit'   => '',
+        if (!$this->getCache()->get('session_login')) {
+            $this->resetHttpClient();
+            $this->client->execute('https://imgur.com/signin', 'POST', array(
+                'username'    => $this->username,
+                'password'    => $this->password,
+                'submit_form' => 'Sign in',
             ));
 
-            $this->checkRequestErrors(__METHOD__);
+            $this->checkHttpClientErrors(__METHOD__);
 
-            if ($this->request->getResponseStatus() == 302
-                || $this->request->getResponseArrayCookies('just_logged_in') == 1
-                || (stripos($this->request->getResponseHeaders('location'), $this->username))
+            if ($this->client->getResponseStatus() == 302
+                || $this->client->getResponseArrayCookies('just_logged_in') == 1
+                || (stripos($this->client->getResponseHeaders('location'), $this->username))
             ) {
-                $this->set('sessionLogin', $this->request->getResponseArrayCookies());
-
+                $this->getCache()->set('session_login', $this->client->getResponseArrayCookies());
             } else {
-                $this->throwException(sprintf('%s: Login failed. %s', __METHOD__, $this->request->getResponseText()));
+                $this->getCache()->deleteGroup($this->getIdentifier());
+                $this->throwException('%s: Login failed.', __METHOD__); // $this->client->getResponseText()
             }
         }
 
@@ -39,24 +39,23 @@ class ChipVN_ImageUploader_Plugins_Imgur extends ChipVN_ImageUploader_Plugins_Ab
      */
     protected function doUpload()
     {
-        if (!$this->get('sessionLogin')) {
+        if (!$this->useAccount) {
             return $this->doUploadFree();
         }
 
-        $this->request->reset();
-        $this->request->setSubmitMultipart();
-        $this->request->setCookies($this->get('sessionLogin'));
-        $this->request->setParameters(array(
-            'key'   => $this->apiKey,
+        $this->resetHttpClient();
+        $this->client->setSubmitMultipart();
+        $this->client->setCookies($this->getCache()->get('session_login'));
+        $this->client->setParameters(array(
             'image' => '@' . $this->file,
         ));
-        $this->request->execute('http://api.imgur.com/2/upload.json', 'POST');
-        $result = json_decode($this->request->getResponseText(), true);
+        $this->client->execute('http://api.imgur.com/2/upload.json', 'POST');
+        $result = json_decode($this->client->getResponseText(), true);
 
-        $this->checkRequestErrors(__METHOD__);
+        $this->checkHttpClientErrors(__METHOD__);
 
         if (isset($result['error'])) {
-            $this->throwException(sprintf('%s: %s', __METHOD__ , $result['error']['message']));
+            $this->throwException('%s: %s', __METHOD__ , $result['error']['message']);
         }
 
         return $this->getLinkFromUploadedResult($result);
@@ -67,22 +66,22 @@ class ChipVN_ImageUploader_Plugins_Imgur extends ChipVN_ImageUploader_Plugins_Ab
      */
     protected function doTransload()
     {
-        if (!$this->get('sessionLogin')) {
+        if (!$this->useAccount) {
             return $this->doTransloadFree();
         }
 
-        $this->request->reset();
-        $this->request->setCookies($this->get('sessionLogin'));
-        $this->request->setParameters(array(
+        $this->resetHttpClient();
+        $this->client->setCookies($this->getCache()->get('session_login'));
+        $this->client->setParameters(array(
             'url' => $this->url,
         ));
-        $this->request->execute('http://imgur.com/upload', 'POST');
-        $result = json_decode($this->request->getResponseText(), true);
+        $this->client->execute('http://imgur.com/upload', 'POST');
+        $result = json_decode($this->client->getResponseText(), true);
 
-        $this->checkRequestErrors(__METHOD__);
+        $this->checkHttpClientErrors(__METHOD__);
 
-        if (strpos($this->request->getResponseHeaders('location'), 'error')) {
-            $this->throwException(sprintf('%s: Image format not supported, or image is corrupt.', __METHOD__));
+        if (strpos($this->client->getResponseHeaders('location'), 'error')) {
+            $this->throwException('%s: Image format not supported, or image is corrupt.', __METHOD__);
         }
 
         return 'http://i.imgur.com/' . $result['data']['hash'] . $this->getExtensionFormImage($this->url);
@@ -98,31 +97,33 @@ class ChipVN_ImageUploader_Plugins_Imgur extends ChipVN_ImageUploader_Plugins_Ab
     {
         $this->getFreeSID();
 
-        $this->request->reset();
-        $this->request->setSubmitMultipart();
-        $this->request->setHeaders(array(
+        $this->resetHttpClient();
+        $this->client->setSubmitMultipart();
+        $this->client->setHeaders(array(
             'X-Requested-With' => 'XMLHttpRequest',
             'Referer'          => 'http://imgur.com/',
         ));
-        $this->request->setCookies($this->get('cookieFreeSID'));
-        $this->request->setParameters(array(
+        $this->client->setCookies($this->getCache()->get('free_session'));
+        $this->client->setParameters(array(
             'current_upload' => 1,
             'total_uploads'  => 1,
             'terms'          => 0,
-            'album_title'    => __CLASS__,
-            'gallery_title'  => __CLASS__,
-            'sid'            => $this->get('freeSID'),
+            'album_title'    => self::POWERED_BY,
+            'gallery_title'  => self::POWERED_BY,
+            'sid'            => $this->getCache()->get('free_sid'),
             'Filedata'       => '@' . $this->file,
         ));
-        $this->request->execute('http://imgur.com/upload', 'POST');
-        $result = json_decode($this->request->getResponseText(), true);
+        $this->client->execute('http://imgur.com/upload', 'POST');
+        $result = json_decode($this->client->getResponseText(), true);
 
-        $this->checkRequestErrors(__METHOD__);
+        $this->checkHttpClientErrors(__METHOD__);
 
         if (isset($result['data']['hash']) AND isset($result['success']) AND $result['success']) {
             return 'http://i.imgur.com/' . $result['data']['hash'] . $this->getExtensionFormImage($this->file);
+        } elseif (isset($result['data']['error']) && $error = $result['data']['error']) {
+             $this->throwException('%s: %s (%d).', __METHOD__, $error['message'], $error['code']);
         } else {
-            $this->throwException(sprintf('%s: Free upload failed.', __METHOD__));
+            $this->throwException('%s: Free upload failed.', __METHOD__);
         }
 
         return false;
@@ -138,69 +139,71 @@ class ChipVN_ImageUploader_Plugins_Imgur extends ChipVN_ImageUploader_Plugins_Ab
     {
         $this->getFreeSID();
 
-        $this->request->reset();
-        $this->request->setHeaders(array(
+        $this->resetHttpClient();
+        $this->client->setHeaders(array(
             'X-Requested-With' => 'XMLHttpRequest',
             'Referer'          => 'http://imgur.com/',
         ));
-        $this->request->setCookies($this->get('cookieFreeSID'));
-        $this->request->setParameters(array(
+        $this->client->setCookies($this->getCache()->get('free_session'));
+        $this->client->setParameters(array(
             'current_upload' => 1,
             'total_uploads'  => 1,
             'terms'          => 0,
-            'album_title'    => __CLASS__,
-            'gallery_title'  => __CLASS__,
-            'sid'            => $this->get('freeSID'),
+            'album_title'    => self::POWERED_BY,
+            'gallery_title'  => self::POWERED_BY,
+            'sid'            => $this->getCache()->get('free_sid'),
             'url'            => $this->url,
         ));
-        $this->request->execute('http://imgur.com/upload', 'POST');
-        $result = json_decode($this->request->getResponseText(), true);
+        $this->client->execute('http://imgur.com/upload', 'POST');
+        $result = json_decode($this->client->getResponseText(), true);
 
-        $this->checkRequestErrors(__METHOD__);
+        $this->checkHttpClientErrors(__METHOD__);
 
         if (isset($result['data']['hash']) AND isset($result['success']) AND $result['success']) {
             return 'http://i.imgur.com/' . $result['data']['hash'] . $this->getExtensionFormImage($this->url);
+        } elseif (isset($result['data']['error']) && $error = $result['data']['error']) {
+             $this->throwException('%s: %s (%d).', __METHOD__, $error['message'], $error['code']);
         } else {
-            $this->throwException(sprintf('%s: Free transload failed.', __METHOD__));
+            $this->throwException('%s: Free transload failed.', __METHOD__);
         }
 
         return false;
     }
 
+    // [upload] => Array
+    // (
+    //     [image] => Array
+    //     (
+    //         [name]       =>
+    //         [title]      =>
+    //         [caption]    =>
+    //         [hash]       => BP2HdFa
+    //         [deletehash] => XXXXXXX
+    //         [datetime]   => 2013-07-25 19:29:57
+    //         [type]       => image/jpeg
+    //         [animated]   => false
+    //         [width]      => 420
+    //         [height]     => 420
+    //         [size]       => 34056
+    //         [views]      => 0
+    //         [bandwidth]  => 0
+    //     )
+    //     [links] => Array
+    //     (
+    //         [original]         => http://i.imgur.com/BP2HdFa.jpg
+    //         [imgur_page]       => http://imgur.com/BP2HdFa
+    //         [delete_page]      => http://imgur.com/delete/XXXXXXX
+    //         [small_square]     => http://i.imgur.com/BP2HdFas.jpg
+    //         [big_square]       => http://i.imgur.com/BP2HdFab.jpg
+    //         [small_thumbnail]  => http://i.imgur.com/BP2HdFat.jpg
+    //         [medium_thumbnail] => http://i.imgur.com/BP2HdFam.jpg
+    //         [large_thumbnail]  => http://i.imgur.com/BP2HdFal.jpg
+    //         [huge_thumbnail]   => http://i.imgur.com/BP2HdFah.jpg
+    //     )
+    // )
     /**
-     * [upload] => Array
-      (
-      [image] => Array
-      (
-      [name] =>
-      [title] =>
-      [caption] =>
-      [hash] => BP2HdFa
-      [deletehash] => XXXXXXX
-      [datetime] => 2013-07-25 19:29:57
-      [type] => image/jpeg
-      [animated] => false
-      [width] => 420
-      [height] => 420
-      [size] => 34056
-      [views] => 0
-      [bandwidth] => 0
-      )
-
-      [links] => Array
-      (
-      [original] => http://i.imgur.com/BP2HdFa.jpg
-      [imgur_page] => http://imgur.com/BP2HdFa
-      [delete_page] => http://imgur.com/delete/XXXXXXX
-      [small_square] => http://i.imgur.com/BP2HdFas.jpg
-      [big_square] => http://i.imgur.com/BP2HdFab.jpg
-      [small_thumbnail] => http://i.imgur.com/BP2HdFat.jpg
-      [medium_thumbnail] => http://i.imgur.com/BP2HdFam.jpg
-      [large_thumbnail] => http://i.imgur.com/BP2HdFal.jpg
-      [huge_thumbnail] => http://i.imgur.com/BP2HdFah.jpg
-      )
-
-      )
+     * Get link from result.
+     *
      * @param  array  $result
      * @return string
      */
@@ -211,22 +214,22 @@ class ChipVN_ImageUploader_Plugins_Imgur extends ChipVN_ImageUploader_Plugins_Ab
 
     private function getFreeSID()
     {
-        if (!$this->get('freeSID')) {
-            $this->request->reset();
-            $this->request->execute('http://imgur.com/upload/start_session');
-            $result = json_decode($this->request->getResponseText(), true);
+        if (!$this->getCache()->get('free_sid')) {
+            $this->resetHttpClient();
+            $this->client->execute('http://imgur.com/upload/start_session');
+            $result = json_decode($this->client->getResponseText(), true);
 
-            $this->checkRequestErrors(__METHOD__);
+            $this->checkHttpClientErrors(__METHOD__);
 
             if (isset($result['sid'])) {
-                $this->set('freeSID', $result['sid']);
-                $this->set('cookieFreeSID', $this->request->getResponseCookies());
+                $this->getCache()->set('free_sid', $result['sid']);
+                $this->getCache()->set('free_session', $this->client->getResponseCookies());
             } else {
-                $this->throwException(sprintf('%s: Cannot get free IMGURSESSION.', __METHOD__));
+                $this->throwException('%s: Cannot get free IMGURSESSION.', __METHOD__);
             }
         }
 
-        return $this->get('freeSID');
+        return $this->getCache()->get('free_sid');
     }
 
     /**
@@ -238,11 +241,7 @@ class ChipVN_ImageUploader_Plugins_Imgur extends ChipVN_ImageUploader_Plugins_Ab
      */
     private function getExtensionFormImage($fileName)
     {
-        $extension = '.jpg';
-        if (preg_match('#\.(gif|jpg|jpeg|bmp|png)$#i', $fileName, $match)) {
-            $extension = $match[0];
-        }
-
-        return $extension;
+        // .bmp -> .jpg
+        return $this->getMatch('#\.(gif|jpg|jpeg|png)$#i', $fileName, 0, '.jpg');
     }
 }

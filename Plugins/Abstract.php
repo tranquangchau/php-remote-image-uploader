@@ -1,7 +1,19 @@
 <?php
-
+/**
+ * @update Jun 19, 2014
+ */
 abstract class ChipVN_ImageUploader_Plugins_Abstract
 {
+    const POWERED_BY = 'by-[ChipVN]-Image-Uploader';
+
+    /**
+     * Determine if login is called
+     *
+     * @since 5.2.0 - Jun 19, 2014
+     * @var boolean
+     */
+    protected $useAccount = false;
+
     /**
      * Username to login hosting service.
      *
@@ -38,41 +50,82 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
     protected $url;
 
     /**
-     * \ChipVN\Http\Request instance for sending request.
+     * Determine the plugin useCurl to send request
      *
-     * @var \ChipVN\Http\Request
+     * @var boolean
      */
-    protected $request;
+    protected $useCurl = false;
+
+    /**
+     * ChipVN_Http_Client instance for sending request.
+     *
+     * @var ChipVN_Http_Client
+     */
+    protected $client;
+
+    /**
+     * ChipVN_ImageUploader_Cache instrance for storage.
+     *
+     * @var ChipVN_ImageUploader_Cache
+     */
+    protected $cache;
 
     /**
      * Create a plugin instance.
      *
      * @return void
-     *
-     * @throws \Exception If session is not initialized
      */
     final public function __construct()
     {
-        // Sure that session is initialized for saving somethings.
-        if (!session_id()) {
-            if (headers_sent()) {
-                $this->throwException('Session is not initialized. Please sure that session_start(); was called at the top of the script.');
-            }
-            session_start();
-        }
-
-        $this->request = $this->createRequest();
-        $this->request->useCurl(false);
+        $this->client = $this->createHttpClient();
     }
 
     /**
-     * Create new ChipVN_Http_Request instance
+     * Default use PHP native session.
      *
-     * @return ChipVN_Http_Request 
+     * @return ChipVN_ImageUploader_Cache
      */
-    public function createRequest()
+    public function getCache()
     {
-        return new ChipVN_Http_Request;
+        if (!$this->cache) {
+            $this->cache = ChipVN_Cache_Manager::make('Session');
+        }
+        // update group use real identifier
+        $this->cache->setOption('group', $this->getIdentifier());
+
+        return $this->cache;
+    }
+
+    /**
+     * Set cache instance.
+     *
+     * @param  string|ChipVN_Cache_Adapter_Interface $cache
+     * @return ChipVN_Cache_Adapter_Interface
+     */
+    public function setCache($cache = '', array $options = array())
+    {
+        if ($cache instanceof ChipVN_Cache_Adapter_Interface) {
+            $this->cache = $cache;
+        } elseif (is_string($cache)) {
+            $this->cache = ChipVN_Cache_Manager::make($cache, $options + array(
+                'group' => $this->getIdentifier()
+            ));
+        }
+
+        return $this->cache;
+    }
+
+    /**
+     * Create new ChipVN_Http_Client instance
+     *
+     * @return ChipVN_Http_Client
+     */
+    public function createHttpClient()
+    {
+        $httpClient = new ChipVN_Http_Client;
+        $httpClient->useCurl($this->useCurl);
+
+        return $httpClient;
     }
 
     /**
@@ -83,7 +136,18 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
      */
     public function useCurl($useCurl)
     {
-        $this->request->useCurl($useCurl);
+        $this->useCurl = $useCurl;
+    }
+
+    /**
+     * Reset request.
+     *
+     * @return void
+     */
+    protected function resetHttpClient()
+    {
+        $this->client->reset();
+        $this->client->useCurl($this->useCurl);
     }
 
     /**
@@ -93,12 +157,13 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
      * @param  string  $password
      * @return boolean
      *
-     * @throws \Exception If login failed.
+     * @throws Exception If login failed.
      */
     final public function login($username, $password)
     {
-        $this->username = $username;
-        $this->password = $password;
+        $this->username   = $username;
+        $this->password   = $password;
+        $this->useAccount = true;
 
         return $this->doLogin($username, $password);
     }
@@ -123,15 +188,15 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
      * @param  string       $file
      * @return string|false
      *
-     * @throws \Exception If have an error occurred
+     * @throws Exception If have an error occurred
      */
     final public function upload($file)
     {
         if (!$filepath = realpath($file)) {
-            $this->throwException(sprintf('%s: File "%s" is not exists.', __METHOD__, $file));
+            $this->throwException('%s: File "%s" is not exists.', __METHOD__, $file);
         }
         if (!getimagesize($filepath)) {
-            $this->throwException(sprintf('%: The file "%s" is not an image.', __METHOD__, $file));
+            $this->throwException('%: The file "%s" is not an image.', __METHOD__, $file);
         }
         $this->file = $filepath;
 
@@ -144,7 +209,7 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
      * @param  string       $url
      * @return string|false
      *
-     * @throws \Exception If have an error occurred
+     * @throws Exception If have an error occurred
      */
     final public function transload($url)
     {
@@ -154,56 +219,23 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
     }
 
     /**
+     * Get plugin identifier (hashed by name and username).
+     *
+     * @return string
+     */
+    final public function getIdentifier()
+    {
+        return md5($this->getName() . $this->username . $this->password);
+    }
+
+    /**
      * Get plugin name.
      *
      * @return string
      */
-    final public function getPluginName()
+    final public function getName()
     {
         return get_class($this);
-    }
-
-    /**
-     * Get cookie, session set by name.
-     *
-     * @param  string $name
-     * @param  mixed  $default
-     * @return mixed
-     */
-    final public function get($name, $default = null)
-    {
-        $key = $this->getSessionKey($name);
-
-        if (isset($_SESSION[$key])) {
-            return $_SESSION[$key];
-        }
-
-        return $default;
-    }
-
-    /**
-     * Save cookies, sessions authentication to execute next request faster.
-     *
-     * @param  string $name
-     * @param  mixed  $value
-     * @return void
-     */
-    final public function set($name, $value)
-    {
-        $key = $this->getSessionKey($name);
-
-        $_SESSION[$key] = $value;
-    }
-
-    /**
-     * Get session key.
-     *
-     * @param  string $name
-     * @return string
-     */
-    final protected function getSessionKey($name)
-    {
-        return $this->getPluginName() . $this->username . $name;
     }
 
     /**
@@ -211,7 +243,7 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
      *
      * @return boolean
      *
-     * @throws \Exception If login failed.
+     * @throws Exception If login failed.
      */
     abstract protected function doLogin();
 
@@ -220,7 +252,7 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
      *
      * @return string|false
      *
-     * @throws \Exception If have an error occurred
+     * @throws Exception If have an error occurred
      */
     abstract protected function doUpload();
 
@@ -229,19 +261,38 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
      *
      * @return string|false
      *
-     * @throws \Exception If have an error occurred
+     * @throws Exception If have an error occurred
      */
     abstract protected function doTransload();
 
     /**
+     * Helper method to get an element from matched.
+     *
+     * @param  string  $regex
+     * @param  string  $text
+     * @param  integer $number
+     * @param  mixed   $default
+     * @return mixed
+     */
+    protected function getMatch($regex, $text, $number = 1, $default = null)
+    {
+        if (preg_match($regex, $text, $match) && isset($match[$number])) {
+            return $match[$number];
+        }
+
+        return $default;
+    }
+
+    /**
      * Throws an exception.
      *
-     * @param  string     $message
-     * @return \Exception
+     * @return Exception
      */
-    protected function throwException($message)
+    protected function throwException()
     {
-        throw new Exception($message);
+        $arguments = $this->trimBaseClassName(func_get_args());
+
+        throw new Exception(call_user_func_array('sprintf', array_slice($arguments, 0, 10)));
     }
 
     /**
@@ -250,21 +301,41 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
      * @param  string $method
      * @return void
      */
-    protected function checkRequestErrors($method)
+    protected function checkHttpClientErrors($method)
     {
-        if ($this->request->errors) {
-            $this->throwRequestError(__METHOD__);
+        if ($this->client->errors) {
+            $this->throwRequestError($method);
         }
     }
 
     /**
      * Throws an exception.
      *
-     * @param  string     $method
-     * @return \Exception
+     * @param  string    $method
+     * @return Exception
      */
     protected function throwRequestError($method)
     {
-        return $this->throwException(sprintf('%s: %s', $method, implode(', ', $this->request->errors)));
+        $method = $this->trimBaseClassName($method);
+
+        return $this->throwException('%s: %s', $method, implode(', ', $this->client->errors));
+    }
+
+    /**
+     * Trim base class name.
+     *
+     * @param  string $value
+     * @return strin
+     */
+    protected function trimBaseClassName($value)
+    {
+        if (is_array($value)) {
+            foreach ($value as &$val) {
+                $val = $this->trimBaseClassName($val);
+            }
+        } else {
+            $value = str_replace('ChipVN_ImageUploader_Plugins_', '...', $value);
+        }
+        return $value;
     }
 }

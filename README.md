@@ -1,25 +1,32 @@
 # PHP-Image-Uploader
-This project mainly help to upload images to some hosting services like Picasa, Imageshack, Imgur
+ This project mainly help to remote upload images to some hosting services like Picasa, Imageshack, Imgur, Postimage, etc.
+ The library is free, but if you need an add-on for xenforo or web tools to upload images, please purchase PAID version under with $12.5, just like give me a beer.
 
 * Author:     Phan Thanh Cong <ptcong90@gmail.com>
 * Copyright:  2010-2014 Phan Thanh Cong.
-* License:    http://www.opensource.org/licenses/mit-license.php  MIT License
-* Version:    5.0 stateble
+* License:    MIT
+* Version:    5.2.4
 
-### Demo
-- http://ptcong.com/imageuploader5 (version 5.1.x - PAID - $10)
-- Version 5.1.x include user interface and Flickr plugin and more features, improved. 
-
-### Purchase
-- Upload tools: http://ptcong.com/?p=10 (PAID - $10)
-- XenForo add-on: http://ptcong.com/?p=23 (PAID - $10)
-- After purchased, you will get emails for new version if the item have updated.
+### PAID version
+* Demo: http://ptcong.com/imageuploader5
+* PAID version that include user interface and more features, improved
+* Purchase Upload tools: http://ptcong.com/?p=10
+* Purchase XenForo add-on: http://ptcong.com/?p=23
+* After purchased, you will get emails for new version if the item have updated.
+* Just like give me a beer.
 
 ## Change Logs
+***Note:*** This is a library only, and version here is library version (not version of tools or xenforo add-on, etc)
+
+##### Version 5.2.3: Jul 10, 2014
+* Update Flickr API (SSL required)
+* Update vendor, ChipVN library
+* Update Picasa plugin to get URL not resized, use account by custom email and avoid BadAuthentication; WebLoginRequired
+* New Postimage plugin
+* Require composer package `"ptcong/php-cache-manager": "dev-master"`
 
 ##### Version 5.0.1: Apr 2, 2014
-* Change class name from `\ChipVN\ImageUploader\ImageUploader` to `ChipVN_ImageUploader_ImageUploader`
-* Support PHP >= 5 (does not require >= 5.3)
+* Change class name from `\ChipVN\ImageUploader\ImageUploader` to `ChipVN_ImageUploader_ImageUploader` for usable on all PHP version >= 5.0
 
 ##### Version 5.0: Mar 07, 2014
 * Supports composer
@@ -28,13 +35,12 @@ This project mainly help to upload images to some hosting services like Picasa, 
 * Remove ~~upload to local server~~
 * Update Imageshack plugin
 
-
 ##### Version 4.0.1: Sep, 2013
 * Fix Imgur auth
 
 ##### Version 4.0: Jul 25, 2013
 * ~~Require PHP 5.3 or newer~~
-* Rewrite all plugins to clear 
+* Rewrite all plugins to clear
 
 ##### Version 1.0: June 17, 2010
 * Upload image to Imageshack, Picasa
@@ -47,23 +53,26 @@ This project mainly help to upload images to some hosting services like Picasa, 
 
 ## Usage
 ###### If you use composer
-Add require `"ptcong/php-image-uploader": "5.0.*@dev"` to _composer.json_ and run `composer update` 
+Add require `"ptcong/php-image-uploader": "dev-master"` to _composer.json_ and run `composer update`
 
 ###### If you don't use composer
-Download `ChipVN_Http_Request` from https://github.com/ptcong/php-http-class and put it to `ChipVN/Http` folder, then include two files:
-    
-    include 'ChipVN_Http_Request.php';
-    include 'ChipVN_ImageUploader_ImageUploader.php';
+Download
+- `Loader.php` from https://github.com/ptcong/php-chipvn-classloader and put it to `ChipVN/ClassLoader` folder
+- `Client.php` from https://github.com/ptcong/php-http-class and put it to `ChipVN/Http` folder
 
+and include the code on the top of your file:
 
-then 
+    include '/path/path/ChipVN/ClassLoader/Loader.php';
+    ChipVN_ClassLoader_Loader::registerAutoLoad();
+
+then
 ### Upload to Picasa.
 To upload image to Picasa, you need to have some AlbumIds otherwise the image will be uploaded to _default_ album.
 To create new AlbumId faster, you may use echo `$uploader->addAlbum('testing 1');`
 
-    $uploader = ChipVN_ImageUploader_ImageUploader::make('Picasa');
+    $uploader = ChipVN_ImageUploader_Manager::make('Picasa');
     $uploader->login('your account here', 'your password here');
-    // you can set upload to an albumId by array of albums or an album, system will get a random album to upload 
+    // you can set upload to an albumId by array of albums or an album, system will get a random album to upload
     //$uploader->setAlbumId(array('51652569125195125', '515124156195725'));
     //$uploader->setAlbumId('51652569125195125');
     echo $uploader->upload(getcwd(). '/test.jpg');
@@ -71,7 +80,7 @@ To create new AlbumId faster, you may use echo `$uploader->addAlbum('testing 1')
 
 ### Upload to Imageshack
 
-    $uploader = ChipVN_ImageUploader_ImageUploader::make('Imageshack');
+    $uploader = ChipVN_ImageUploader_Manager::make('Imageshack');
     $uploader->login('your account here', 'your password here');
     $uploader->setApi('your api here');
     echo $uploader->upload(getcwd(). '/a.jpg');
@@ -79,7 +88,15 @@ To create new AlbumId faster, you may use echo `$uploader->addAlbum('testing 1')
 
 ### Upload to Imgur
 
-    $uploader = ChipVN_ImageUploader_ImageUploader::make('Imgur');
+    $uploader = ChipVN_ImageUploader_Manager::make('Imgur');
+    // you may upload with anonymous account but may be the image will be deleted after a period of time
+    // $uploader->login('your account here', 'your password here');
+    echo $uploader->upload(getcwd(). '/a.jpg');
+    echo $uploader->transload('http://img33.imageshack.us/img33/6840/wz7u.jpg');
+
+### Upload to Postimage
+
+    $uploader = ChipVN_ImageUploader_Manager::make('Postimage');
     // you may upload with anonymous account but may be the image will be deleted after a period of time
     // $uploader->login('your account here', 'your password here');
     echo $uploader->upload(getcwd(). '/a.jpg');

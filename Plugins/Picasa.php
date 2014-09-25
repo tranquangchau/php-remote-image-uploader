@@ -2,18 +2,12 @@
 /**
  * You must loggedin for uploading.
  * This plugin doesn't support transloading.
+ *
+ * @lastupdate May 27, 2014
  */
 
 class ChipVN_ImageUploader_Plugins_Picasa extends ChipVN_ImageUploader_Plugins_Abstract
 {
-
-    /**
-     * Size of image after uploaded. This calculated by max(with, height).
-     *
-     * @var	integer
-     */
-    private $size = NULL;
-
     /*
      * AlbumId to archive image.
      * Account upload limits:
@@ -34,42 +28,38 @@ class ChipVN_ImageUploader_Plugins_Picasa extends ChipVN_ImageUploader_Plugins_A
     protected function doLogin()
     {
         // normalize username
-        $this->username = preg_replace('#@.*?$#', '', $this->username);
+        $this->username = preg_replace('#@gmail\.com#i', '', $this->username);
 
-        if (!$this->get('sessionLogin') OR $this->get('loginTime') + 300 < $_SERVER['REQUEST_TIME']) {
-            $this->request->reset();
-            $this->request->setParameters(array(
-                'accountType'   => 'HOSTED_OR_GOOGLE',
-                'Email'         => $this->username,
-                'Passwd'        => $this->password,
-                'source'        => __CLASS__,
-                'service'       => 'lh2'
+        if (!$this->getCache()->get('session_login')) {
+            $this->resetHttpClient();
+            $this->client->setParameters(array(
+                'accountType' => 'HOSTED_OR_GOOGLE',
+                'Email'       => $this->username,
+                'Passwd'      => $this->password,
+                'source'      => 'Zend-ZendFramework Zend_Framework_Gdata/1.10.5', // avoid Google suspect an illegal logging
+                'service'     => 'lh2'
             ));
-            $this->request->execute('https://www.google.com/accounts/ClientLogin', 'POST');
+            $this->client->execute('https://www.google.com/accounts/ClientLogin', 'POST');
 
-            $this->checkRequestErrors(__METHOD__);
+            $this->checkHttpClientErrors(__METHOD__);
 
-            if (preg_match('#Auth=([a-z0-9_\-]+)#i', $this->request->getResponseText(), $match)) {
-                $this->set('sessionLogin', $match[1]);
-                $this->set('loginTime', $_SERVER['REQUEST_TIME']);
+            if ($cookie = $this->getMatch('#Auth=([a-z0-9_\-]+)#i', $this->client->getResponseText())) {
+                $this->getCache()->set('session_login', $cookie, 300);
+            } elseif (
+                ($error = $this->getMatch('#Error=(.+)#i', $this->client->getResponseText()))
+                && ($info = $this->getMatch('#Info=(.+)#i', $this->client->getResponseText()))
+            ) {
+                $this->getCache()->deleteGroup($this->getIdentifier());
 
+                $this->throwException('%s: Error=%s. Info=%s', __METHOD__, $error, $info);
             } else {
-                $this->set('sessionLogin', NULL);
-                $this->throwException(sprintf('%s: Login failed. %s', __METHOD__, $this->request->getResponseText()));
+                $this->getCache()->deleteGroup($this->getIdentifier());
+
+                $this->throwException('%s: Login failed.', __METHOD__);
             }
         }
 
         return true;
-    }
-
-    /**
-     * Set size for URL after uploaded. (s<X>)
-     *
-     * @param integer $size
-     */
-    public function setSize($size)
-    {
-        $this->size = $size;
     }
 
     /**
@@ -80,8 +70,10 @@ class ChipVN_ImageUploader_Plugins_Picasa extends ChipVN_ImageUploader_Plugins_A
      */
     public function setAlbumId($albumIds)
     {
+        if (empty($albumIds)) {
+            $albumIds = 'default';
+        }
         $albumIds = (array) $albumIds;
-
         $this->albumId = $albumIds[array_rand($albumIds, 1)];
     }
 
@@ -92,41 +84,39 @@ class ChipVN_ImageUploader_Plugins_Picasa extends ChipVN_ImageUploader_Plugins_A
     {
         $this->checkPermission(__METHOD__);
 
-        $this->request->reset();
-        $this->request->setSubmitMultipart('related');
-        $this->request->setHeaders(array(
-            "Authorization: GoogleLogin auth=" . $this->get('sessionLogin'),
+        $this->resetHttpClient();
+        $this->client->setSubmitMultipart('related');
+        $this->client->setHeaders(array(
+            "Authorization: GoogleLogin auth=" . $this->getCache()->get('session_login'),
             "MIME-Version: 1.0",
         ));
-        $this->request->setRawPost("Content-Type: application/atom+xml\r\n
+        $this->client->setRawPost("Content-Type: application/atom+xml\r\n
             <entry xmlns='http://www.w3.org/2005/Atom'>
             <title>" . preg_replace('#\..*?$#i', '', basename($this->file)) . "</title>
             <category scheme=\"http://schemas.google.com/g/2005#kind\" term=\"http://schemas.google.com/photos/2007#photo\"/>
             </entry>");
 
-        $this->request->setParameters(array(
-            'data' => '@' . $this->file
+        $this->client->setParameters(array(
+            'data' => '@' . $this->file,
         ));
-        $this->request->execute(
+
+        $this->client->execute(
             'https://picasaweb.google.com/data/feed/api/user/' . $this->username . '/albumid/' . $this->albumId . '?alt=json'
         );
 
-        $result = json_decode($this->request->getResponseText(), true);
+        $result = json_decode($this->client->getResponseText(), true);
 
-        $this->checkRequestErrors(__METHOD__);
+        $this->checkHttpClientErrors(__METHOD__);
 
-        if (
-            $this->request->getResponseStatus() != 201
-            || empty($result['entry']['media$group']['media$content'][0])
-        ) {
-            $this->throwException(sprintf('%s: Upload failed. %s', __METHOD__, $this->request->getResponseText()));
+        if ($this->client->getResponseStatus() != 201 || empty($result['entry']['media$group']['media$content'][0]) )
+        {
+            $this->throwException('%s: Upload failed. %s', __METHOD__, $this->client->getResponseText());
         }
 
         // url, width, height, type
         extract($result['entry']['media$group']['media$content'][0]);
 
-        $size = $this->size ?: max($width, $height);
-        $url  = str_replace(basename($url), 's' . $size . '/' . basename($url), $url);
+        $url = preg_replace('#/(s\d+/)?([^/]+)$#', '/s0/$2', $url);
 
         return $url;
     }
@@ -136,7 +126,7 @@ class ChipVN_ImageUploader_Plugins_Picasa extends ChipVN_ImageUploader_Plugins_A
      */
     protected function doTransload()
     {
-        $this->throwException(sprintf('%s: Currently, this plugin doesn\'t support transload image.', __METHOD__));
+        $this->throwException('%s: Currently, this plugin doesn\'t support transload image.', __METHOD__);
     }
 
     /**
@@ -151,18 +141,18 @@ class ChipVN_ImageUploader_Plugins_Picasa extends ChipVN_ImageUploader_Plugins_A
     {
         $this->checkPermission(__METHOD__);
 
-        $this->request->reset();
-        $this->request->setHeaders(array(
-            "Authorization: GoogleLogin auth=" . $this->get('sessionLogin'),
+        $this->resetHttpClient();
+        $this->client->setHeaders(array(
+            "Authorization: GoogleLogin auth=" . $this->getCache()->get('session_login'),
             "MIME-Version: 1.0",
             "GData-Version: 3.0",
             "If-Match: *"
         ));
-        $this->request->execute('https://picasaweb.google.com/data/entry/api/user/' . $this->username . '/albumid/' . $albumId, 'DELETE');
+        $this->client->execute('https://picasaweb.google.com/data/entry/api/user/' . $this->username . '/albumid/' . $albumId, 'DELETE');
 
-        $this->checkRequestErrors(__METHOD__);
+        $this->checkHttpClientErrors(__METHOD__);
 
-        return ($this->request->getResponseHeaders('status') == 200);
+        return ($this->client->getResponseHeaders('status') == 200);
     }
 
     /**
@@ -179,38 +169,33 @@ class ChipVN_ImageUploader_Plugins_Picasa extends ChipVN_ImageUploader_Plugins_A
     {
         $this->checkPermission(__METHOD__);
 
-        $this->request->reset();
-        $this->request->setHeaders(array(
-            "Authorization: GoogleLogin auth=" . $this->get('sessionLogin'),
+        $this->resetHttpClient();
+        $this->client->setHeaders(array(
+            "Authorization: GoogleLogin auth=" . $this->getCache()->get('session_login'),
             "MIME-Version: 1.0",
         ));
-        $this->request->setMimeContentType("application/atom+xml");
-        $this->request->setRawPost("<entry xmlns='http://www.w3.org/2005/Atom' xmlns:media='http://search.yahoo.com/mrss/' xmlns:gphoto='http://schemas.google.com/photos/2007'>
+        $this->client->setEnctype("application/atom+xml");
+        $this->client->setRawPost("<entry xmlns='http://www.w3.org/2005/Atom' xmlns:media='http://search.yahoo.com/mrss/' xmlns:gphoto='http://schemas.google.com/photos/2007'>
             <title type='text'>" . $title . "</title>
             <summary type='text'>" . $description . "</summary>
             <gphoto:access>" . $access . "</gphoto:access>
             <category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/photos/2007#album'></category>
         </entry>");
-        $this->request->execute('https://picasaweb.google.com/data/feed/api/user/' . $this->username, 'POST');
+        $this->client->execute('https://picasaweb.google.com/data/feed/api/user/' . $this->username, 'POST');
 
-        $this->checkRequestErrors(__METHOD__);
+        $this->checkHttpClientErrors(__METHOD__);
 
-        if (preg_match('#<id>.+?albumid/(.+?)</id>#i', $this->request->getResponseText(), $match)) {
-            return $match[1];
-        }
-
-        return false;
+        return $this->getMatch('#<id>.+?albumid/(.+?)</id>#i', $this->client->getResponseText(), 1, false);
     }
 
     /**
      * @param  string     $method
-     * @throws \Exception if sessionLogin is empty
+     * @throws \Exception if session_login is empty
      */
     private function checkPermission($method)
     {
-        if (!$this->get('sessionLogin')) {
-            $this->throwException(sprintf('You must be logged in before call the method "%s"', __METHOD__));
+        if (!$this->getCache()->get('session_login')) {
+            $this->throwException('You must be logged in before call the method "%s"', __METHOD__);
         }
     }
-
 }

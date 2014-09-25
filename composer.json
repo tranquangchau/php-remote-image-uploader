@@ -1,8 +1,7 @@
 {
-    "minimum-stability" : "dev",
     "name": "ptcong/php-image-uploader",
-    "description": "Library for uploading image to picasa, imageshack, imgur, etc...",
-    "keywords": ["php", "http", "image-uploader", "remote-upload"],
+    "description": "Library for uploading image to picasa, imageshack, imgur, postimage etc...",
+    "keywords": ["php", "image uploader", "remote image upload"],
     "license": "MIT",
     "authors": [
         {
@@ -13,10 +12,13 @@
     ],
     "require": {
         "php": ">=5.0",
-        "ptcong/php-http-class": "dev-master"
+        "ptcong/php-chipvn-classloader": "dev-master",
+        "ptcong/php-http-class": "dev-master",
+        "ptcong/php-cache-manager": "dev-master"
     },
     "autoload": {
         "classmap": ["ChipVN/ImageUploader"]
     },
-    "target-dir": "ChipVN/ImageUploader"
+    "target-dir": "ChipVN/ImageUploader",
+    "minimum-stability" : "dev"
 }
