@@ -36,7 +36,7 @@ class ChipVN_ImageUploader_Plugins_Picasa extends ChipVN_ImageUploader_Plugins_A
                 'accountType' => 'HOSTED_OR_GOOGLE',
                 'Email'       => $this->username,
                 'Passwd'      => $this->password,
-                'source'      => 'Zend-ZendFramework Zend_Framework_Gdata/1.10.5', // avoid Google suspect an illegal logging
+                'source'      => self::POWERED_BY,
                 'service'     => 'lh2'
             ));
             $this->client->execute('https://www.google.com/accounts/ClientLogin', 'POST');
