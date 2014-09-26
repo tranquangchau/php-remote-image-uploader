@@ -26,7 +26,7 @@ The library is free, but if you need an add-on for xenforo or web tools to uploa
 ##### Version 5.2.3: Jul 10, 2014
 * Update Flickr API (SSL required)
 * Update vendor, ChipVN library
-* Update Picasa plugin to get URL not resized, use account by custom email and avoid BadAuthentication; WebLoginRequired
+* Update Picasa plugin to get URL not resized, use account by custom email
 * New Postimage plugin
 
 ##### Version 5.0.1: Apr 2, 2014
