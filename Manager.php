@@ -29,5 +29,6 @@ class ChipVN_ImageUploader_Manager
         $class = 'ChipVN_ImageUploader_Plugins_' . ucfirst($plugin);
 
         return new $class;
+
     }
 }

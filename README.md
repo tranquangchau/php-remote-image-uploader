@@ -1,7 +1,7 @@
 # PHP-Image-Uploader
 This project mainly help to remote upload images to some hosting services like Picasa, Imageshack, Imgur, Postimage, etc.
 
-The library is free, but if you need an add-on for xenforo or web tools to upload images, please purchase PAID version under with $12.5, just like give me a beer.
+The library is free, but if you need an add-on for xenforo or web tools to upload images, please purchase PAID version under with $12.5, just like gift me a beer.
 
 * Author:     Phan Thanh Cong <ptcong90@gmail.com>
 * Copyright:  2010-2014 Phan Thanh Cong.
@@ -14,7 +14,7 @@ The library is free, but if you need an add-on for xenforo or web tools to uploa
 * Purchase Upload tools: http://ptcong.com/?p=10
 * Purchase XenForo add-on: http://ptcong.com/?p=23
 * After purchased, you will get emails for new version if the item have updated.
-* Just like give me a beer.
+* Just like gift me a beer.
 
 ## Change Logs
 ***Note:*** This is a library only, and version here is library version (not version of tools or xenforo add-on, etc)
