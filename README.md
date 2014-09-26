@@ -17,9 +17,8 @@ The library is free, but if you need an add-on for xenforo or web tools to uploa
 * Just like gift me a beer.
 
 
-### Issues
-* Picasa::doLogin: Error=BadAuthentication. Info=WebLoginRequired
-    Go to https://www.google.com/settings/security/lesssecureapps, signin with your account and change Access for less secure apps to Enabled.
+### Issues (for both paid and free version)
+* `Picasa::doLogin: Error=BadAuthentication. Info=WebLoginRequired`. To solve the issue, go to https://www.google.com/settings/security/lesssecureapps, signin with your account and change Access for less secure apps to Enabled.
 
 ## Change Logs
 ***Note:*** This is a library only, and version here is library version (not version of tools or xenforo add-on, etc)
