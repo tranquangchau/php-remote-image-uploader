@@ -16,6 +16,11 @@ The library is free, but if you need an add-on for xenforo or web tools to uploa
 * After purchased, you will get emails for new version if the item have updated.
 * Just like gift me a beer.
 
+
+### Issues
+* Picasa::doLogin: Error=BadAuthentication. Info=WebLoginRequired
+    Go to https://www.google.com/settings/security/lesssecureapps, signin with your account and change Access for less secure apps to Enabled.
+
 ## Change Logs
 ***Note:*** This is a library only, and version here is library version (not version of tools or xenforo add-on, etc)
 
@@ -24,7 +29,6 @@ The library is free, but if you need an add-on for xenforo or web tools to uploa
 * Update vendor, ChipVN library
 * Update Picasa plugin to get URL not resized, use account by custom email and avoid BadAuthentication; WebLoginRequired
 * New Postimage plugin
-* Require composer package `"ptcong/php-cache-manager": "dev-master"`
 
 ##### Version 5.0.1: Apr 2, 2014
 * Change class name from `\ChipVN\ImageUploader\ImageUploader` to `ChipVN_ImageUploader_ImageUploader` for usable on all PHP version >= 5.0
