@@ -84,6 +84,12 @@ class ChipVN_ImageUploader_Plugins_Imgur extends ChipVN_ImageUploader_Plugins_Ab
             $this->throwException('%s: Image format not supported, or image is corrupt.', __METHOD__);
         }
 
+        if (isset($result['data']['error'])) {
+            $this->throwException('%s: %s (%s).',
+                __METHOD__, $result['data']['error']['message'], $result['data']['error']['type']
+            );
+        }
+
         return 'http://i.imgur.com/' . $result['data']['hash'] . $this->getExtensionFormImage($this->url);
     }
 
