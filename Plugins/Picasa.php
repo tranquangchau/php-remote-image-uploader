@@ -18,7 +18,7 @@ class ChipVN_ImageUploader_Plugins_Picasa extends ChipVN_ImageUploader_Plugins_A
      * Maximum number of photos and videos per web album: 1,000
      * Total storage space: Picasa Web provides 1 GB for photos and videos. Files under
      *
-     * @var	string
+     * @var string
      */
     private $albumId = 'default';
 
@@ -43,11 +43,11 @@ class ChipVN_ImageUploader_Plugins_Picasa extends ChipVN_ImageUploader_Plugins_A
 
             $this->checkHttpClientErrors(__METHOD__);
 
-            if ($cookie = $this->getMatch('#Auth=([a-z0-9_\-]+)#i', $this->client->getResponseText())) {
+            if ($cookie = $this->getMatch('#Auth=([a-z0-9_\-]+)#i', $this->client)) {
                 $this->getCache()->set('session_login', $cookie, 300);
             } elseif (
-                ($error = $this->getMatch('#Error=(.+)#i', $this->client->getResponseText()))
-                && ($info = $this->getMatch('#Info=(.+)#i', $this->client->getResponseText()))
+                ($error = $this->getMatch('#Error=(.+)#i', $this->client))
+                && ($info = $this->getMatch('#Info=(.+)#i', $this->client))
             ) {
                 $this->getCache()->deleteGroup($this->getIdentifier());
 
@@ -104,13 +104,13 @@ class ChipVN_ImageUploader_Plugins_Picasa extends ChipVN_ImageUploader_Plugins_A
             'https://picasaweb.google.com/data/feed/api/user/' . $this->username . '/albumid/' . $this->albumId . '?alt=json'
         );
 
-        $result = json_decode($this->client->getResponseText(), true);
+        $result = json_decode($this->client, true);
 
         $this->checkHttpClientErrors(__METHOD__);
 
         if ($this->client->getResponseStatus() != 201 || empty($result['entry']['media$group']['media$content'][0]) )
         {
-            $this->throwException('%s: Upload failed. %s', __METHOD__, $this->client->getResponseText());
+            $this->throwException('%s: Upload failed. %s', __METHOD__, $this->client);
         }
 
         // url, width, height, type
@@ -185,7 +185,7 @@ class ChipVN_ImageUploader_Plugins_Picasa extends ChipVN_ImageUploader_Plugins_A
 
         $this->checkHttpClientErrors(__METHOD__);
 
-        return $this->getMatch('#<id>.+?albumid/(.+?)</id>#i', $this->client->getResponseText(), 1, false);
+        return $this->getMatch('#<id>.+?albumid/(.+?)</id>#i', $this->client, 1, false);
     }
 
     /**

@@ -126,7 +126,11 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
     {
         $url = $this->getRequestTokenUrl($callback);
 
-        header('Location: ' . $url);
+        if(headers_sent()) {
+            echo '<meta http-equiv="refresh" content="0; url='. $url . '"><script type="text/javascript">window.location.href = "' . $url . '";</script>';
+        } else {
+            header('Location: ' . $url);
+        }
         exit;
     }
 
@@ -147,7 +151,7 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
         $formRequest->setFollowRedirect(true, 3);
         $formRequest->execute($requestTokenUrl);
 
-        $text = $formRequest->getResponseText();
+        $text = $formRequest;
         $pos  = stripos($text, 'id="login_form"');
         $form = substr($text, $pos);
         $form = substr($form, 0, stripos($form, '</fieldset'));
@@ -171,8 +175,8 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
         $authRequest->setCookies($formRequest->getResponseArrayCookies());
         $authRequest->execute('https://login.yahoo.com/config/login');
 
-        if (!strpos($authRequest->getResponseText(), '/services/auth/')) {
-            if (stripos($authRequest->getResponseText(), 'Javascript enabled')) {
+        if (!strpos($authRequest, '/services/auth/')) {
+            if (stripos($authRequest, 'Javascript enabled')) {
                 $this->throwException('%s: Yahoo detected automatic sign in and try to restrict. Please run script get AUTH_TOKEN, AUTH_SECRET then call setAccessToken($token, $secret) before.', __METHOD__);
             }
             print_r($authRequest);
@@ -181,7 +185,7 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
         }
 
         // go to flickr to authorize
-        if (!$pos = strpos($text = $authRequest->getResponseText(), '/services/oauth/authorize.gne')) {
+        if (!$pos = strpos($text = $authRequest, '/services/oauth/authorize.gne')) {
             $this->throwException('%s: Cannot bypass Flickr authorization.', __METHOD__);
         }
         $form    = substr($text, $pos);
@@ -233,7 +237,7 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
         $this->client->setParameters($params);
         $this->client->setSubmitMultipart();
         $this->client->execute($url);
-        $text = $this->client->getResponseText();
+        $text = $this->client;
 
         if (!$photoId = $this->getMatch('#<photoid>([\d]+)</photoid>#i', $text)) {
             parse_str($text, $result);
@@ -370,7 +374,7 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
         $this->resetHttpClient();
         $this->client->execute($url);
 
-        parse_str($this->client->getResponseText(), $result);
+        parse_str($this->client, $result);
         if (isset($result['oauth_problem'])) {
             $this->throwException('REQUEST_TOKEN_PROBLEM: "%s"', $result['oauth_problem']);
         }
@@ -408,7 +412,7 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
         $this->resetHttpClient();
         $this->client->execute($url);
 
-        parse_str($this->client->getResponseText(), $result);
+        parse_str($this->client, $result);
         if (isset($result['oauth_problem'])) {
             $this->throwException('ACCESS_TOKEN_PROBLEM: "%s"', $result['oauth_problem']);
         }
@@ -445,8 +449,8 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
         $this->resetHttpClient();
         $this->client->execute($url);
 
-        if (false === $result = json_decode($this->client->getResponseText(), true)) {
-            parse_str($this->client->getResponseText(), $result);
+        if (false === $result = json_decode($this->client, true)) {
+            parse_str($this->client, $result);
             if (isset($result['oauth_problem'])) {
                 $this->throwException('API_PROBLEM: "%s"', $result['oauth_problem']);
             }

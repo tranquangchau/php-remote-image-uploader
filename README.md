@@ -6,7 +6,7 @@ The library is free, but if you need an add-on for xenforo or web tools to uploa
 * Author:     Phan Thanh Cong <ptcong90@gmail.com>
 * Copyright:  2010-2014 Phan Thanh Cong.
 * License:    MIT
-* Version:    5.2.4
+* Version:    5.2.12
 
 ### PAID version
 * Demo: http://ptcong.com/imageuploader5
@@ -18,10 +18,15 @@ The library is free, but if you need an add-on for xenforo or web tools to uploa
 
 
 ### Issues (for both paid and free version)
-* `Picasa::doLogin: Error=BadAuthentication. Info=WebLoginRequired`. To solve the issue, go to https://www.google.com/settings/security/lesssecureapps, signin with your account and change Access for less secure apps to Enabled. Then go to https://accounts.google.com/DisplayUnlockCaptcha, signin with your account and Enable to unlock captcha.
+* `Picasa::doLogin: Error=BadAuthentication. Info=WebLoginRequired`. To solve the issue, go to https://www.google.com/settings/security/lesssecureapps, signin with your account and change Access for less secure apps to Enabled.
 
 ## Change Logs
-***Note:*** This is a library only, and version here is library version (not version of tools or xenforo add-on, etc)
+
+#### Version 5.2.12; Oct 14, 2014
+* Update: Flickr `requestToken` method to avoid error if headers has sent.
+
+##### Version 5.2.8; Oct 06, 2014
+* Update: Imgur plugin to use API version 3 (require API Client ID, Secret)
 
 ##### Version 5.2.3: Jul 10, 2014
 * Update Flickr API (SSL required)
@@ -76,7 +81,7 @@ To upload image to Picasa, you need to have some AlbumIds otherwise the image wi
 To create new AlbumId faster, you may use echo `$uploader->addAlbum('testing 1');`
 
     $uploader = ChipVN_ImageUploader_Manager::make('Picasa');
-    $uploader->login('your account here', 'your password here');
+    $uploader->login('your account', 'your password');
     // you can set upload to an albumId by array of albums or an album, system will get a random album to upload
     //$uploader->setAlbumId(array('51652569125195125', '515124156195725'));
     //$uploader->setAlbumId('51652569125195125');
@@ -86,7 +91,7 @@ To create new AlbumId faster, you may use echo `$uploader->addAlbum('testing 1')
 ### Upload to Imageshack
 
     $uploader = ChipVN_ImageUploader_Manager::make('Imageshack');
-    $uploader->login('your account here', 'your password here');
+    $uploader->login('your account', 'your password');
     $uploader->setApi('your api here');
     echo $uploader->upload(getcwd(). '/a.jpg');
     echo $uploader->transload('http://img33.imageshack.us/img33/6840/wz7u.jpg');
@@ -94,6 +99,8 @@ To create new AlbumId faster, you may use echo `$uploader->addAlbum('testing 1')
 ### Upload to Imgur
 
     $uploader = ChipVN_ImageUploader_Manager::make('Imgur');
+    $uploader->setApi('your client id');
+    $uploader->setSecret('your client secret');
     // you may upload with anonymous account but may be the image will be deleted after a period of time
     // $uploader->login('your account here', 'your password here');
     echo $uploader->upload(getcwd(). '/a.jpg');
@@ -106,3 +113,7 @@ To create new AlbumId faster, you may use echo `$uploader->addAlbum('testing 1')
     // $uploader->login('your account here', 'your password here');
     echo $uploader->upload(getcwd(). '/a.jpg');
     echo $uploader->transload('http://img33.imageshack.us/img33/6840/wz7u.jpg');
+
+### Upload to FLickr
+    // already exist, update later
+

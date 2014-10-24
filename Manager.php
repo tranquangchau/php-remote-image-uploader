@@ -6,17 +6,12 @@
  * @author     Phan Thanh Cong <ptcong90@gmail.com>
  * @copyright  2010-2014 Phan Thanh Cong.
  * @license    http://www.opensource.org/licenses/mit-license.php  MIT License
- * @version    5.1
- * @release    Apr 08, 2014
  * @website    http://ptcong.com
  */
 
 class ChipVN_ImageUploader_Manager
 {
-    /**
-     * Library version
-     */
-    const VERSION = '5.1';
+    const VERSION = '5.2.12';
 
     /**
      * Create a plugin for uploading.
@@ -29,6 +24,5 @@ class ChipVN_ImageUploader_Manager
         $class = 'ChipVN_ImageUploader_Plugins_' . ucfirst($plugin);
 
         return new $class;
-
     }
 }

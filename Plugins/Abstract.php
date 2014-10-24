@@ -1,13 +1,11 @@
 <?php
-/**
- * @update Jun 19, 2014
- */
+
 abstract class ChipVN_ImageUploader_Plugins_Abstract
 {
     const POWERED_BY = 'by-[ChipVN]-Image-Uploader';
 
     /**
-     * Determine if login is called
+     * Determine if login have called
      *
      * @since 5.2.0 - Jun 19, 2014
      * @var boolean
@@ -122,7 +120,7 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
      */
     public function createHttpClient()
     {
-        $httpClient = new ChipVN_Http_Client;
+        $httpClient = new ChipVN_Http_Client();
         $httpClient->useCurl($this->useCurl);
 
         return $httpClient;
@@ -185,8 +183,8 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
     /**
      * Execute upload action and return URL.
      *
-     * @param  string       $file
-     * @return string|false
+     * @param  string $file
+     * @return string
      *
      * @throws Exception If have an error occurred
      */
@@ -206,8 +204,8 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
     /**
      * Execute transload action and return URL.
      *
-     * @param  string       $url
-     * @return string|false
+     * @param  string $url
+     * @return string
      *
      * @throws Exception If have an error occurred
      */
@@ -284,6 +282,26 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
     }
 
     /**
+     * Helper method to get element in an array
+     *
+     * @param  array $array
+     * @param  key   $keys  index.index.index
+     * @return mixed
+     */
+    protected function getElement($array, $keys, $default = null)
+    {
+        foreach (explode('.', $keys) as $key) {
+            if (isset($array[$key])) {
+                $array = $array[$key];
+            } else {
+                return $default;
+            }
+        }
+
+        return $array;
+    }
+
+    /**
      * Throws an exception.
      *
      * @return Exception
@@ -334,8 +352,9 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
                 $val = $this->trimBaseClassName($val);
             }
         } else {
-            $value = str_replace('ChipVN_ImageUploader_Plugins_', '...', $value);
+            $value = strtr($value, array('ChipVN_ImageUploader_Plugins_' => ''));
         }
+
         return $value;
     }
 }

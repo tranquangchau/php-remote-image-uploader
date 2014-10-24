@@ -38,7 +38,7 @@ class ChipVN_ImageUploader_Plugins_Imageshack extends ChipVN_ImageUploader_Plugi
                 'remember_me' => 'true',
                 'set_cookies' => 'true',
             ));
-            $result = json_decode($this->client->getResponseText(), true);
+            $result = json_decode($this->client, true);
 
             $this->checkHttpClientErrors(__METHOD__);
 
@@ -52,7 +52,7 @@ class ChipVN_ImageUploader_Plugins_Imageshack extends ChipVN_ImageUploader_Plugi
                     $message = 'Login failed.';
                 }
                 $this->getCache()->deleteGroup($this->getIdentifier());
-                $this->throwException('%s: %s.', __METHOD__, $message); // $this->client->getResponseText()
+                $this->throwException('%s: %s.', __METHOD__, $message); // $this->client
             }
         }
 
@@ -101,12 +101,12 @@ class ChipVN_ImageUploader_Plugins_Imageshack extends ChipVN_ImageUploader_Plugi
         ));
         $this->client->execute(self::UPLOAD_ENPOINT, 'POST');
 
-        $result = json_decode($this->client->getResponseText(), true);
+        $result = json_decode($this->client, true);
 
         $this->checkHttpClientErrors(__METHOD__);
 
         if (isset($result['error']['error_message'])) {
-            $this->throwException(__METHOD__ . ': ' . $result['error']['error_message']); // . $this->client->getResponseText()
+            $this->throwException(__METHOD__ . ': ' . $result['error']['error_message']); // . $this->client
 
         } elseif (isset($result['result']['images'][0])) {
             $image = $result['result']['images'][0];

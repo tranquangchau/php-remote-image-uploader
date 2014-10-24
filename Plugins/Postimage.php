@@ -145,7 +145,7 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
             'optsize'  => '0',
             'submit'   => 'Upload It!',
             'tpl'      => '.',
-            'ui'       => '24__1440__900__true__?__?__' .date('d/m/Y H : i : s'). '__Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv : 30.0) Gecko/20100101 Firefox/30.0__',
+            'ui'       => '24__1440__900__true__?__?__' .date('d/m/Y H:i:s'). '__Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv : 30.0) Gecko/20100101 Firefox/30.0__',
             'um'       => 'web',
             'url_list' => $this->url,
             'ver'      => '',
@@ -166,7 +166,6 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
      */
     private function getImageFromResult($url)
     {
-        $endpoint = $this->getUrlEnpoint();
         $imageId  = $this->getMatch('#^http://postimg\.org/\w+/([^/]+)/.*?#', $url);
 
         if (! $imageId) {
@@ -179,13 +178,8 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
 
         $imageUrl = $this->getMatch('#id="code_2".*?>(https?://\w+\.postimg\.org/\w+/\w+\.\w+)#i', $this->client);
 
-        if (! $imageUrl) {
+        if (!$imageUrl) {
             $this->throwException('%s: Image URL not found.', __METHOD__);
-            // $this->resetHttpClient();
-            // $this->client->setReferer($url);
-            // $this->client->execute('http://postimg.org/image/' . $imageId . '/');
-            // print_r($this->client);
-            // exit;
         }
 
         return $imageUrl;
