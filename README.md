@@ -115,5 +115,6 @@ To create new AlbumId faster, you may use echo `$uploader->addAlbum('testing 1')
     echo $uploader->transload('http://img33.imageshack.us/img33/6840/wz7u.jpg');
 
 ### Upload to FLickr
+
     // already exist, update later
 
