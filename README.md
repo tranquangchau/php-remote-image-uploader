@@ -13,6 +13,7 @@ The library is free, but if you need an add-on for xenforo or web tools to uploa
 * PAID version that include user interface and more features, improved
 * Purchase Upload tools: http://ptcong.com/?p=10
 * Purchase XenForo add-on: http://ptcong.com/?p=23
+* Purchase Wordpress plugin: http://ptcong.com/?p=1105
 * After purchased, you will get emails for new version if the item have updated.
 * Just like gift me a beer.
 
