@@ -3,12 +3,12 @@
  * Plugin for http://postimage.org
  *
  * @release Jun 19, 2014
+ * @update Nov 07, 2014
  */
 class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugins_Abstract
 {
     const FREE_UPLOAD_ENPOINT    = 'http://postimage.org/';
     const ACCOUNT_UPLOAD_ENPOINT = 'http://postimg.org/';
-
     /**
      * Gets upload url endpoint
      *
@@ -65,23 +65,13 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
         $this->client->setReferer($endpoint);
         $this->client->setParameters(array(
             'upload'         => '@' . $this->file,
-            'mode'           => 'local',
-            'areaid'         => '',
-            'hash'           => '',
-            'code'           => '',
-            'content'        => '',
-            'tpl'            => '.',
-            'ver'            => '',
-            'addform'        => '',
-            'mforum'         => '',
             'session_upload' => $time,
             'um'             => 'computer',
             'forumurl'       => $endpoint,
             'upload_error'   => '',
-            'ui'             => '24__1440__900__true__?__?__' .date('d/m/Y H:i:s'). '__Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:30.0) Gecko/20100101 Firefox/30.0__',
-            'optsize'        => '0',
-            'adult'          => 'no',
         ));
+        $this->client->setParameters($this->getGeneralParameters());
+
         $this->client->execute($endpoint);
 
         $galleryId = (string) $this->client;
@@ -93,24 +83,13 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
         $this->client->setReferer($endpoint);
         $this->client->setParameters(array(
             'upload[]'       => '',
-            'mode'           => 'local',
-            'areaid'         => '',
-            'hash'           => '',
-            'code'           => '',
-            'content'        => '',
-            'tpl'            => '.',
-            'ver'            => '',
-            'addform'        => '',
-            'mforum'         => '',
             'session_upload' => $time,
             'um'             => 'computer',
             'forumurl'       => $endpoint,
             'gallery_id'     => $galleryId,
             'upload_error'   => '',
-            'ui'             => '24__1440__900__true__?__?__' .date('d/m/Y H:i:s'). '__Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:30.0) Gecko/20100101 Firefox/30.0__',
-            'optsize'        => '0',
-            'adult'          => 'no',
         ));
+        $this->client->setParameters($this->getGeneralParameters());
         $this->client->execute($endpoint, 'POST');
 
         $this->checkHttpClientErrors(__METHOD__);
@@ -123,9 +102,7 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
      */
     protected function doTransload()
     {
-        $endpoint    = $this->getUrlEnpoint();
-        $webEndpoint = $endpoint . 'index.php?um=web';
-        $time        = time();
+        $endpoint = $this->getUrlEnpoint();
 
         $this->resetHttpClient();
         if ($this->useAccount) {
@@ -133,28 +110,44 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
         }
         $this->client->setReferer($endpoint);
         $this->client->setParameters(array(
-            'addform'  => '',
-            'adult'    => 'no',
-            'areaid'   => '',
-            'code'     => '',
-            'content'  => '',
             'forumurl' => $endpoint,
-            'hash'     => '',
-            'mforum'   => '',
-            'mode'     => 'local',
-            'optsize'  => '0',
-            'submit'   => 'Upload It!',
-            'tpl'      => '.',
-            'ui'       => '24__1440__900__true__?__?__' .date('d/m/Y H:i:s'). '__Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv : 30.0) Gecko/20100101 Firefox/30.0__',
+            'ui'       => $ui,
             'um'       => 'web',
             'url_list' => $this->url,
-            'ver'      => '',
         ));
-        $this->client->execute($webEndpoint, 'POST');
+        $this->client->setParameters($this->getGeneralParameters());
+        $this->client->execute($endpoint, 'POST'); // 'index.php?um=web'
 
         $this->checkHttpClientErrors(__METHOD__);
 
         return $this->getImageFromResult($this->client->getResponseHeaders('location'));
+    }
+
+    /**
+     * General parameters for sending.
+     *
+     * @return array
+     */
+    protected function getGeneralParameters()
+    {
+        $time = time();
+        $ui   = '24__1440__900__true__?__?__' . date('d/m/Y H:i:s', $time) . '__' . $this->client->getUserAgent() . '__';
+
+        return array(
+            'mode'    => 'local',
+            'areaid'  => '',
+            'hash'    => '',
+            'code'    => '',
+            'content' => '',
+            'tpl'     => '.',
+            'ver'     => '',
+            'addform' => '',
+            'mforum'  => '',
+            'submit'  => 'Upload It!',
+            'ui'      => $ui,
+            'adult'   => 'no',
+            'optsize' => '0',
+        );
     }
 
     /**
@@ -166,7 +159,7 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
      */
     private function getImageFromResult($url)
     {
-        $imageId  = $this->getMatch('#^http://postimg\.org/\w+/([^/]+)/.*?#', $url);
+        $imageId  = $this->getMatch('#^http://post(?:img|image)\.org/\w+/([^/]+)/.*?#', $url);
 
         if (! $imageId) {
             $this->throwException('%s: Image ID not found.', __METHOD__);
