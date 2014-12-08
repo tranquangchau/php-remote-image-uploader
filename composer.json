@@ -13,7 +13,7 @@
     ],
     "require": {
         "php": ">=5.0",
-        "ptcong/php-http-class": "2.5.*@dev"
+        "ptcong/php-http-class": "dev-master"
     },
     "autoload": {
         "classmap": ["ChipVN/ImageUploader"]
