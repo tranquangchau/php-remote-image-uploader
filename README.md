@@ -19,7 +19,9 @@ The library is free, but if you need an add-on for xenforo or web tools to uploa
 
 
 ### Issues (for both paid and free version)
-* `Picasa::doLogin: Error=BadAuthentication. Info=WebLoginRequired`. To solve the issue, go to https://www.google.com/settings/security/lesssecureapps, signin with your account and change Access for less secure apps to Enabled.
+* `Picasa::doLogin: Error=BadAuthentication. Info=WebLoginRequired`.
+    * To solve the issue, go to https://www.google.com/settings/security/lesssecureapps, signin with your account and change Access for less secure apps to Enabled.
+    * Go to https://accounts.google.com/DisplayUnlockCaptcha, signin with your account and Enable to unlock captcha.
 
 ## Change Logs
 
