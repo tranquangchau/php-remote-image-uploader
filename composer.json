@@ -17,7 +17,9 @@
         "ptcong/php-cache-manager": "dev-master"
     },
     "autoload": {
-        "classmap": ["ChipVN/ImageUploader"]
+        "psr-0": {
+            "ChipVN_": "/"
+        }
     },
     "target-dir": "ChipVN/ImageUploader"
 }
