@@ -6,7 +6,7 @@ The library is free, but if you need an add-on for xenforo or web tools to uploa
 * Author:     Phan Thanh Cong <ptcong90@gmail.com>
 * Copyright:  2010-2014 Phan Thanh Cong.
 * License:    MIT
-* Version:    5.2.12
+* Version:    5.2.13
 
 ### PAID version
 * Demo: http://ptcong.com/imageuploader5
@@ -24,6 +24,11 @@ The library is free, but if you need an add-on for xenforo or web tools to uploa
     * Go to https://accounts.google.com/DisplayUnlockCaptcha, signin with your account and Enable to unlock captcha.
 
 ## Change Logs
+
+#### Version 5.2.13; Jan 19, 2015
+* Clean all plugins
+* Optimize, rewrite a part of Picasa plugin and fixed a bug while checking permission; increase session expires time to 900 seconds.
+* Use new version of ChipVN_Http_Client to get higher performance when upload large file.
 
 #### Version 5.2.12; Oct 14, 2014
 * Update: Flickr `requestToken` method to avoid error if headers has sent.

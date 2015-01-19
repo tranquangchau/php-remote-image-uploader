@@ -20,7 +20,7 @@ class ChipVN_ImageUploader_Plugins_Imageshack extends ChipVN_ImageUploader_Plugi
      */
     protected function getApiURL($path)
     {
-        return self::API_ENDPOINT . $path;
+        return self::API_ENDPOINT.$path;
     }
 
     /**
@@ -30,21 +30,21 @@ class ChipVN_ImageUploader_Plugins_Imageshack extends ChipVN_ImageUploader_Plugi
     {
         // session_login is array
         if (!$this->getCache()->get('session_login')) {
-            $this->resetHttpClient();
-            $this->client->setReferer('https://imageshack.com/');
-            $this->client->execute(self::LOGIN_ENDPOINT, 'POST', array(
-                'username'    => $this->username,
-                'password'    => $this->password,
-                'remember_me' => 'true',
-                'set_cookies' => 'true',
-            ));
-            $result = json_decode($this->client, true);
+            $this->resetHttpClient()
+                ->setReferer('https://imageshack.com/')
+                ->setParameters(array(
+                    'username'    => $this->username,
+                    'password'    => $this->password,
+                    'remember_me' => 'true',
+                    'set_cookies' => 'true',
+                ))
+            ->execute(self::LOGIN_ENDPOINT, 'POST');
 
             $this->checkHttpClientErrors(__METHOD__);
+            $result = json_decode($this->client, true);
 
             if (!empty($result['result']['userid'])) {
                 $this->getCache()->set('session_login', $result['result']);
-
             } else {
                 if (isset($result['error']['error_message'])) {
                     $message = $result['error']['error_message'];
@@ -64,7 +64,7 @@ class ChipVN_ImageUploader_Plugins_Imageshack extends ChipVN_ImageUploader_Plugi
      */
     protected function doUpload()
     {
-        return $this->sendRequest(array('file' => '@' . $this->file));
+        return $this->sendRequest(array('file' => '@'.$this->file));
     }
 
     /**
@@ -93,25 +93,23 @@ class ChipVN_ImageUploader_Plugins_Imageshack extends ChipVN_ImageUploader_Plugi
 
         $session = $this->getCache()->get('session_login');
 
-        $this->resetHttpClient();
-        $this->client->setSubmitMultipart();
-        $this->client->setParameters($param + array(
-            'auth_token' => $session['auth_token'],
-            'api_key'    => $this->apiKey,
-        ));
-        $this->client->execute(self::UPLOAD_ENPOINT, 'POST');
-
-        $result = json_decode($this->client, true);
+        $this->resetHttpClient()
+            ->setSubmitMultipart()
+            ->setParameters($param + array(
+                'auth_token' => $session['auth_token'],
+                'api_key'    => $this->apiKey,
+            ))
+            ->execute(self::UPLOAD_ENPOINT, 'POST');
 
         $this->checkHttpClientErrors(__METHOD__);
+        $result = json_decode($this->client, true);
 
         if (isset($result['error']['error_message'])) {
-            $this->throwException(__METHOD__ . ': ' . $result['error']['error_message']); // . $this->client
-
+            $this->throwException(__METHOD__.': '.$result['error']['error_message']); // . $this->client
         } elseif (isset($result['result']['images'][0])) {
             $image = $result['result']['images'][0];
 
-            return 'http://imageshack.com/a/img' . $image['server'] . '/' . $image['bucket'] . '/' . $image['filename'];
+            return 'http://imageshack.com/a/img'.$image['server'].'/'.$image['bucket'].'/'.$image['filename'];
         }
 
         return false;

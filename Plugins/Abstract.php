@@ -106,7 +106,7 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
             $this->cache = $cache;
         } elseif (is_string($cache)) {
             $this->cache = ChipVN_Cache_Manager::make($cache, $options + array(
-                'group' => $this->getIdentifier()
+                'group' => $this->getIdentifier(),
             ));
         }
 
@@ -140,12 +140,14 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
     /**
      * Reset request.
      *
-     * @return void
+     * @return ChipVN_Http_Client
      */
     protected function resetHttpClient()
     {
         $this->client->reset();
         $this->client->useCurl($this->useCurl);
+
+        return $this->client;
     }
 
     /**
@@ -223,7 +225,7 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
      */
     final public function getIdentifier()
     {
-        return md5($this->getName() . $this->username . $this->password);
+        return md5($this->getName().$this->username.$this->password);
     }
 
     /**

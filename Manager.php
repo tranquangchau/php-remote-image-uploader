@@ -11,7 +11,7 @@
 
 class ChipVN_ImageUploader_Manager
 {
-    const VERSION = '5.2.12';
+    const VERSION = '5.2.13'; // Jan 19, 2015
 
     /**
      * Create a plugin for uploading.

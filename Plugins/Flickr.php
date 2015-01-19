@@ -126,10 +126,10 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
     {
         $url = $this->getRequestTokenUrl($callback);
 
-        if(headers_sent()) {
-            echo '<meta http-equiv="refresh" content="0; url='. $url . '"><script type="text/javascript">window.location.href = "' . $url . '";</script>';
+        if (headers_sent()) {
+            echo '<meta http-equiv="refresh" content="0; url='.$url.'"><script type="text/javascript">window.location.href = "'.$url.'";</script>';
         } else {
-            header('Location: ' . $url);
+            header('Location: '.$url);
         }
         exit;
     }
@@ -147,9 +147,9 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
         $requestTokenUrl = $this->getRequestTokenUrl('http://ptcong.com');
 
         // follow to login form
-        $formRequest = $this->createHttpClient();
-        $formRequest->setFollowRedirect(true, 3);
-        $formRequest->execute($requestTokenUrl);
+        $formRequest = $this->createHttpClient()
+            ->setFollowRedirect(true, 3)
+        ->execute($requestTokenUrl);
 
         $text = $formRequest;
         $pos  = stripos($text, 'id="login_form"');
@@ -167,20 +167,19 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
         ksort($params);
 
         // submit login form
-        $authRequest = $this->createHttpClient();
-        $authRequest->setMethod('POST');
-        $authRequest->setFollowRedirect(true, 4);
-        $authRequest->setParameters($params);
-        $authRequest->setReferer($formRequest->getTarget());
-        $authRequest->setCookies($formRequest->getResponseArrayCookies());
-        $authRequest->execute('https://login.yahoo.com/config/login');
+        $authRequest = $this->createHttpClient()
+            ->setFollowRedirect(true, 4)
+            ->setParameters($params)
+            ->setReferer($formRequest->getTarget())
+            ->setCookies($formRequest->getResponseArrayCookies())
+            ->setMethod('POST')
+        ->execute('https://login.yahoo.com/config/login');
 
         if (!strpos($authRequest, '/services/auth/')) {
             if (stripos($authRequest, 'Javascript enabled')) {
                 $this->throwException('%s: Yahoo detected automatic sign in and try to restrict. Please run script get AUTH_TOKEN, AUTH_SECRET then call setAccessToken($token, $secret) before.', __METHOD__);
             }
             print_r($authRequest);
-
             $this->throwException('%s: Cannot reach the Flickr Authorization page or your account is incorrect.', __METHOD__);
         }
 
@@ -195,11 +194,11 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
         preg_match_all('#input.*?name="(.*?)".*?value="(.*?)"#is', $form, $matches);
         $params = array_combine($matches[1], $matches[2]);
 
-        $this->resetHttpClient();
-        $this->client->setCookies($cookies);
-        $this->client->setParameters($params);
-        $this->client->setMethod('POST');
-        $this->client->execute('https://www.flickr.com//services/oauth/authorize.gne');
+        $this->resetHttpClient()
+            ->setCookies($cookies)
+            ->setParameters($params)
+            ->setMethod('POST')
+        ->execute('https://www.flickr.com//services/oauth/authorize.gne');
 
         $location = $this->client->getResponseHeaders('location');
         if (!($requestAuthToken = $this->getMatch('#oauth_token=([\w-]+)#i', $location))
@@ -231,26 +230,25 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
         ));
 
         list($url, $params) = $this->prepareOAuthRequestData(self::UPLOAD_ENDPOINT, 'POST', $params);
-        $params['photo'] = '@' . $this->file;
+        $params['photo'] = '@'.$this->file;
 
-        $this->resetHttpClient();
-        $this->client->setParameters($params);
-        $this->client->setSubmitMultipart();
-        $this->client->execute($url);
-        $text = $this->client;
+        $this->resetHttpClient()
+            ->setParameters($params)
+            ->setSubmitMultipart()
+        ->execute($url);
 
-        if (!$photoId = $this->getMatch('#<photoid>([\d]+)</photoid>#i', $text)) {
-            parse_str($text, $result);
+        if (!$photoId = $this->getMatch('#<photoid>([\d]+)</photoid>#i', $this->client)) {
+            parse_str($this->client, $result);
             if (isset($result['oauth_problem'])) {
                 $this->throwException('UPLOAD_PROBLEM: "%s"', $result['oauth_problem']);
             } else {
-                $error = $this->getMatch('#code="(.+?)"#', $text);
-                $msg =   $this->getMatch('#msg="(.+?)"#', $text);
+                $error = $this->getMatch('#code="(.+?)"#', $this->client);
+                $msg =   $this->getMatch('#msg="(.+?)"#', $this->client);
                 $this->throwException('UPLOAD_PROBLEM: "%s" (%d)', $msg, $error);
             }
         }
         $result = $this->call('flickr.photos.getInfo', array(
-            'photo_id' => $photoId
+            'photo_id' => $photoId,
         ));
 
         return $this->getPhotoUrl($result['photo']);
@@ -272,7 +270,7 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
                 '{server-id}' => $photo['server'],
                 '{id}'        => $photo['id'],
                 '{o-secret}'  => $photo['originalsecret'],
-                '{o-format}'  => $photo['originalformat']
+                '{o-format}'  => $photo['originalformat'],
             )
         );
     }
@@ -298,7 +296,7 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
         $baseString = $this->getBaseString($url_endpoint, $method, $params);
         $params     = $this->pushSignature($params, $baseString, $secretKey2);
         if ($method == 'GET') {
-            $url = $url_endpoint . '?' . http_build_query($params);
+            $url = $url_endpoint.'?'.http_build_query($params);
         } else {
             $url = $url_endpoint;
         }
@@ -319,7 +317,7 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
             'oauth_timestamp'        => time(),
             'oauth_consumer_key'     => $this->apiKey,
             'oauth_signature_method' => 'HMAC-SHA1',
-            'oauth_version'          => '1.0'
+            'oauth_version'          => '1.0',
         );
         ksort($params);
 
@@ -334,7 +332,7 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
      */
     protected function getBaseString($url, $method, array $params)
     {
-        return $method . '&' . urlencode($url). '&'. urlencode(http_build_query($params));
+        return $method.'&'.urlencode($url).'&'.urlencode(http_build_query($params));
     }
 
     /**
@@ -352,7 +350,7 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
             $secretKey2 = $cache->get(self::REQUEST_OAUTH_SECRET, '');
         }
 
-        $secret = $this->secret . '&' . $secretKey2;
+        $secret = $this->secret.'&'.$secretKey2;
         $params['oauth_signature'] = base64_encode(hash_hmac('sha1', $baseString, $secret, true));
 
         return $params;
@@ -384,9 +382,9 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
         $this->getCache()->set(self::REQUEST_OAUTH_TOKEN,   $result['oauth_token']);
         $this->getCache()->set(self::REQUEST_OAUTH_SECRET,  $result['oauth_token_secret']);
 
-        list($url, ) = $this->prepareOAuthRequestData(self::AUTH_ENDPOINT, 'GET', array(
+        list($url,) = $this->prepareOAuthRequestData(self::AUTH_ENDPOINT, 'GET', array(
             'oauth_token' => $result['oauth_token'],
-            'perms'       => 'write'
+            'perms'       => 'write',
         ));
 
         return $url;
@@ -405,12 +403,11 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
         // get access token
         $params = $this->getParameters(array(
             'oauth_token'    => $requestAuthToken,
-            'oauth_verifier' => $requestAuthVerifier
+            'oauth_verifier' => $requestAuthVerifier,
         ));
         list($url, $params) = $this->prepareOAuthRequestData(self::ACCESS_TOKEN_ENDPOINT, 'GET', $params, $secretKey2);
 
-        $this->resetHttpClient();
-        $this->client->execute($url);
+        $this->resetHttpClient()->execute($url);
 
         parse_str($this->client, $result);
         if (isset($result['oauth_problem'])) {
@@ -442,12 +439,11 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
             'method'         => $method,
             'oauth_token'    => $this->getAccessToken(),
             'format'         => 'json',
-            'nojsoncallback' => '1'
+            'nojsoncallback' => '1',
         ));
         list($url, $params) = $this->prepareOAuthRequestData(self::API_ENDPOINT, 'GET', $params);
 
-        $this->resetHttpClient();
-        $this->client->execute($url);
+        $this->resetHttpClient()->execute($url);
 
         if (false === $result = json_decode($this->client, true)) {
             parse_str($this->client, $result);
