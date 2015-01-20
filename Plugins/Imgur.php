@@ -3,16 +3,22 @@
  * You may upload to your account or without account.
  *
  * Update Oct 06, 2014: Use API ver 3
+ *
+ * @lastupdate Jan 20, 2015
  */
 
 class ChipVN_ImageUploader_Plugins_Imgur extends ChipVN_ImageUploader_Plugins_Abstract
 {
-    const AUTH_ENDPOINT  = 'https://api.imgur.com/oauth2/authorize';
-    const TOKEN_ENDPOINT = 'https://api.imgur.com/oauth2/token';
-    const UPLOAD_ENPOINT = 'https://api.imgur.com/3/image';
+    const AUTH_ENDPOINT          = 'https://api.imgur.com/oauth2/authorize';
+    const TOKEN_ENDPOINT         = 'https://api.imgur.com/oauth2/token';
+    const UPLOAD_ENPOINT         = 'https://api.imgur.com/3/image';
+    const START_SESSION_ENDPOINT = 'http://imgur.com/upload/start_session';
 
-    const ACCESS_TOKEN   = 'access_token';
-    const REFRESH_TOKEN  = 'refresh_token';
+    const ACCESS_TOKEN           = 'access_token';
+    const REFRESH_TOKEN          = 'refresh_token';
+
+    const FREE_SESSION_ID        = 'free_session_id';
+    const FREE_SESSION           = 'free_session';
 
     /**
      * Client secret.
@@ -36,7 +42,7 @@ class ChipVN_ImageUploader_Plugins_Imgur extends ChipVN_ImageUploader_Plugins_Ab
      */
     protected function doLogin()
     {
-        if (!$this->getCache()->get(self::ACCESS_TOKEN)) {
+        if (!$this->getCache()->has(self::ACCESS_TOKEN)) {
             if ($this->refreshToken()) {
                 return true;
             }
@@ -263,21 +269,21 @@ class ChipVN_ImageUploader_Plugins_Imgur extends ChipVN_ImageUploader_Plugins_Ab
      */
     private function getFreeSession()
     {
-        if (!$this->getCache()->get('free_sid')) {
-            $this->resetHttpClient()->execute('http://imgur.com/upload/start_session');
+        if (!$this->getCache()->has(self::FREE_SESSION_ID)) {
+            $this->resetHttpClient()->execute(self::START_SESSION_ENDPOINT);
 
             $this->checkHttpClientErrors(__METHOD__);
             $result = json_decode($this->client, true);
 
             if (isset($result['sid'])) {
-                $this->getCache()->set('free_sid', $result['sid']);
-                $this->getCache()->set('free_session', $this->client->getResponseCookies());
+                $this->getCache()->set(self::FREE_SESSION_ID, $result['sid']);
+                $this->getCache()->set(self::FREE_SESSION, $this->client->getResponseCookies());
             } else {
                 $this->throwException('%s: Cannot get free IMGURSESSION.', __METHOD__);
             }
         }
 
-        return array($this->getCache()->get('free_sid'), $this->getCache()->get('free_session'));
+        return array($this->getCache()->get(self::FREE_SESSION_ID), $this->getCache()->get(self::FREE_SESSION));
     }
 
     /**

@@ -6,6 +6,8 @@
  * the plugin can't bypass then it trigger an error message.
  * You should run script get AUTH_TOKEN, AUTH_SECRET
  * then call setAccessToken($token, $secret) before.
+ *
+ * @lastupdate Jan 20, 2015
  */
 
 class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_Abstract

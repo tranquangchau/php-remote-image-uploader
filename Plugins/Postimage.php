@@ -3,12 +3,15 @@
  * Plugin for http://postimage.org
  *
  * @release Jun 19, 2014
- * @update Nov 07, 2014
+ * @lastupdate Jan 20, 2015
  */
 class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugins_Abstract
 {
     const FREE_UPLOAD_ENPOINT    = 'http://postimage.org/';
     const ACCOUNT_UPLOAD_ENPOINT = 'http://postimg.org/';
+
+    const SESSION_LOGIN          = 'session_login';
+
     /**
      * Gets upload url endpoint
      *
@@ -16,7 +19,7 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
      */
     private function getUrlEnpoint()
     {
-        return $this->getCache()->get('session_login')
+        return $this->getCache()->has(self::SESSION_LOGIN)
             ? self::ACCOUNT_UPLOAD_ENPOINT
             : self::FREE_UPLOAD_ENPOINT;
     }
@@ -26,7 +29,7 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
      */
     protected function doLogin()
     {
-        if (!$this->getCache()->get('session_login')) {
+        if (!$this->getCache()->has(self::SESSION_LOGIN)) {
             $this->resetHttpClient()
                 ->setParameters(array(
                     'login'    => $this->username,
@@ -40,9 +43,9 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
             if ($this->client->getResponseStatus() == 302
                 && $this->client->getResponseArrayCookies('userlogin') != 'deleted'
             ) {
-                $this->getCache()->set('session_login', $this->client->getResponseArrayCookies());
+                $this->getCache()->set(self::SESSION_LOGIN, $this->client->getResponseArrayCookies());
             } else {
-                $this->getCache()->deleteGroup($this->getIdentifier());
+                $this->getCache()->delete(self::SESSION_LOGIN);
                 $this->throwException('%s: Login failed.', __METHOD__);
             }
         }
@@ -60,7 +63,7 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
 
         $this->resetHttpClient();
         if ($this->useAccount) {
-            $this->client->setCookies($this->getCache()->get('session_login'));
+            $this->client->setCookies($this->getCache()->get(self::SESSION_LOGIN));
         }
         $this->client
             ->setSubmitMultipart()
@@ -79,7 +82,7 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
 
         $this->resetHttpClient();
         if ($this->useAccount) {
-            $this->client->setCookies($this->getCache()->get('session_login'));
+            $this->client->setCookies($this->getCache()->get(self::SESSION_LOGIN));
         }
         $this->client
             ->setReferer($endpoint)
@@ -108,7 +111,7 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
 
         $this->resetHttpClient();
         if ($this->useAccount) {
-            $this->client->setCookies($this->getCache()->get('session_login'));
+            $this->client->setCookies($this->getCache()->get(self::SESSION_LOGIN));
         }
         $this->client->setReferer($endpoint)
             ->setParameters(array(

@@ -17,12 +17,31 @@ class ChipVN_ImageUploader_Manager
      * Create a plugin for uploading.
      *
      * @param  string                             $plugin
-     * @return ChipVN_ImageUploaderPlugins_Plugin
+     * @return ChipVN_ImageUploader_Plugins_Abstract
      */
     public static function make($plugin)
     {
-        $class = 'ChipVN_ImageUploader_Plugins_' . ucfirst($plugin);
+        $prefix = 'ChipVN_ImageUploader_Plugins_';
+        foreach (array($prefix.'Abstract', $class = $prefix.ucfirst($plugin)) as $name) {
+            if (!class_exists($name, false)) {
+                require self::getClassFile($name);
+            }
+        }
 
-        return new $class;
+        return new $class();
+    }
+
+    /**
+     * Gets class file.
+     *
+     * @param  string $class
+     * @return string
+     */
+    protected static function getClassFile($class)
+    {
+        return strtr($class, array(
+            'ChipVN' => dirname(dirname(__FILE__)),
+            '_'      => DIRECTORY_SEPARATOR,
+        )).'.php';
     }
 }

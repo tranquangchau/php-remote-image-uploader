@@ -3,14 +3,17 @@
  * You must loggedin for uploading.
  * This plugin doesn't support transloading.
  *
- * @lastupdate May 27, 2014
+ * @lastupdate Jan 20, 2015
  */
 
 class ChipVN_ImageUploader_Plugins_Picasa extends ChipVN_ImageUploader_Plugins_Abstract
 {
-    const API_ENDPOINT = 'https://picasaweb.google.com/data/feed/api';
-    const PATH_USER    = 'user';
-    const PATH_ALBUMID = 'albumid';
+    const CLIENT_LOGIN_ENDPOINT = 'https://www.google.com/accounts/ClientLogin';
+    const API_ENDPOINT          = 'https://picasaweb.google.com/data/feed/api';
+    const PATH_USER             = 'user';
+    const PATH_ALBUMID          = 'albumid';
+
+    const SESSION_LOGIN         = 'session_login';
 
     /*
      * AlbumId to archive image.
@@ -34,7 +37,7 @@ class ChipVN_ImageUploader_Plugins_Picasa extends ChipVN_ImageUploader_Plugins_A
         // normalize username
         $this->username = preg_replace('#@gmail\.com#i', '', $this->username);
 
-        if (!$this->getCache()->get('session_login')) {
+        if (!$this->getCache()->has(self::SESSION_LOGIN)) {
             $this->resetHttpClient()
                 ->setParameters(array(
                     'accountType' => 'HOSTED_OR_GOOGLE',
@@ -43,21 +46,21 @@ class ChipVN_ImageUploader_Plugins_Picasa extends ChipVN_ImageUploader_Plugins_A
                     'source'      => self::POWERED_BY,
                     'service'     => 'lh2',
                 ))
-            ->execute('https://www.google.com/accounts/ClientLogin', 'POST');
+            ->execute(self::CLIENT_LOGIN_ENDPOINT, 'POST');
 
             $this->checkHttpClientErrors(__METHOD__);
 
             if ($cookie = $this->getMatch('#Auth=([a-z0-9_\-]+)#i', $this->client)) {
-                $this->getCache()->set('session_login', $cookie, 900);
+                $this->getCache()->set(self::SESSION_LOGIN, $cookie, 900);
             } elseif (
                 ($error = $this->getMatch('#Error=(.+)#i', $this->client))
                 && ($info = $this->getMatch('#Info=(.+)#i', $this->client))
             ) {
-                $this->getCache()->deleteGroup($this->getIdentifier());
+                $this->getCache()->delete(self::SESSION_LOGIN);
 
                 $this->throwException('%s: Error=%s. Info=%s', __METHOD__, $error, $info);
             } else {
-                $this->getCache()->deleteGroup($this->getIdentifier());
+                $this->getCache()->delete(self::SESSION_LOGIN);
 
                 $this->throwException('%s: Login failed.', __METHOD__);
             }
@@ -177,7 +180,7 @@ class ChipVN_ImageUploader_Plugins_Picasa extends ChipVN_ImageUploader_Plugins_A
      */
     private function checkPermission($method)
     {
-        if (!$this->getCache()->get('session_login')) {
+        if (!$this->getCache()->has(self::SESSION_LOGIN)) {
             $this->throwException('You must be logged in before call the method "%s"', $method);
         }
     }
@@ -190,7 +193,7 @@ class ChipVN_ImageUploader_Plugins_Picasa extends ChipVN_ImageUploader_Plugins_A
     private function getGeneralHeaders()
     {
         return array(
-            "Authorization: GoogleLogin auth=".$this->getCache()->get('session_login'),
+            "Authorization: GoogleLogin auth=".$this->getCache()->get(self::SESSION_LOGIN),
             "MIME-Version: 1.0",
         );
     }

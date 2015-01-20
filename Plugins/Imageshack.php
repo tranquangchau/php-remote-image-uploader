@@ -4,13 +4,15 @@
  * Register an API here: {@link https://imageshack.com/contact/api}.
  * You must login and have an API for uploading, transloading.
  *
- * @update Jul 10, 2014
+ * @lastupdate Jan 20, 2015
  */
 
 class ChipVN_ImageUploader_Plugins_Imageshack extends ChipVN_ImageUploader_Plugins_Abstract
 {
     const LOGIN_ENDPOINT = 'https://imageshack.com/rest_api/v2/user/login';
     const UPLOAD_ENPOINT = 'https://imageshack.com/rest_api/v2/images';
+
+    const SESSION_LOGIN  = 'session_login';
 
     /**
      * Get API endpoint URL.
@@ -29,7 +31,7 @@ class ChipVN_ImageUploader_Plugins_Imageshack extends ChipVN_ImageUploader_Plugi
     protected function doLogin()
     {
         // session_login is array
-        if (!$this->getCache()->get('session_login')) {
+        if (!$this->getCache()->has(self::SESSION_LOGIN)) {
             $this->resetHttpClient()
                 ->setReferer('https://imageshack.com/')
                 ->setParameters(array(
@@ -44,14 +46,15 @@ class ChipVN_ImageUploader_Plugins_Imageshack extends ChipVN_ImageUploader_Plugi
             $result = json_decode($this->client, true);
 
             if (!empty($result['result']['userid'])) {
-                $this->getCache()->set('session_login', $result['result']);
+                $this->getCache()->set(self::SESSION_LOGIN, $result['result']);
             } else {
                 if (isset($result['error']['error_message'])) {
                     $message = $result['error']['error_message'];
                 } else {
                     $message = 'Login failed.';
                 }
-                $this->getCache()->deleteGroup($this->getIdentifier());
+                $this->getCache()->delete(self::SESSION_LOGIN);
+
                 $this->throwException('%s: %s.', __METHOD__, $message); // $this->client
             }
         }
@@ -85,13 +88,13 @@ class ChipVN_ImageUploader_Plugins_Imageshack extends ChipVN_ImageUploader_Plugi
      */
     private function sendRequest(array $param)
     {
-        if (!$this->getCache()->get('session_login') || empty($this->apiKey)) {
+        if (!$this->getCache()->has(self::SESSION_LOGIN) || empty($this->apiKey)) {
             $this->throwException(
                 'You must be loggedin and have an API key. Register API here: https://imageshack.com/contact/api'
             );
         }
 
-        $session = $this->getCache()->get('session_login');
+        $session = $this->getCache()->get(self::SESSION_LOGIN);
 
         $this->resetHttpClient()
             ->setSubmitMultipart()

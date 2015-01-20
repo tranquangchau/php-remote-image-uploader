@@ -88,8 +88,8 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
         if (!$this->cache) {
             $this->cache = ChipVN_Cache_Manager::make('Session');
         }
-        // update group use real identifier
-        $this->cache->setOption('group', $this->getIdentifier());
+        // ensure don't overrides session of other accounts
+        $this->cache->setOption('prefix', $this->getIdentifier());
 
         return $this->cache;
     }
@@ -102,11 +102,11 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
      */
     public function setCache($cache = '', array $options = array())
     {
-        if ($cache instanceof ChipVN_Cache_Adapter_Interface) {
+        if ($cache instanceof ChipVN_Cache_Adapter_Abstract) {
             $this->cache = $cache;
         } elseif (is_string($cache)) {
             $this->cache = ChipVN_Cache_Manager::make($cache, $options + array(
-                'group' => $this->getIdentifier(),
+                'prefix' => $this->getIdentifier(),
             ));
         }
 
@@ -225,7 +225,7 @@ abstract class ChipVN_ImageUploader_Plugins_Abstract
      */
     final public function getIdentifier()
     {
-        return md5($this->getName().$this->username.$this->password);
+        return substr(md5($this->getName().$this->username.$this->password), 0, 5);
     }
 
     /**
