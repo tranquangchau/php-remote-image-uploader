@@ -21,27 +21,8 @@ class ChipVN_ImageUploader_Manager
      */
     public static function make($plugin)
     {
-        $prefix = 'ChipVN_ImageUploader_Plugins_';
-        foreach (array($prefix.'Abstract', $class = $prefix.ucfirst($plugin)) as $name) {
-            if (!class_exists($name, false)) {
-                require self::getClassFile($name);
-            }
-        }
+        $class = 'ChipVN_ImageUploader_Plugins_'.ucfirst($plugin);
 
         return new $class();
-    }
-
-    /**
-     * Gets class file.
-     *
-     * @param  string $class
-     * @return string
-     */
-    protected static function getClassFile($class)
-    {
-        return strtr($class, array(
-            'ChipVN' => dirname(dirname(__FILE__)),
-            '_'      => DIRECTORY_SEPARATOR,
-        )).'.php';
     }
 }
