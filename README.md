@@ -25,6 +25,9 @@ The library is free, but if you need an add-on for xenforo or web tools to uploa
 
 ## Change Logs
 
+#### Version 5.2.14; Mar 07, 2015
+* Fix Postimage not found image url in some cases.
+
 #### Version 5.2.13; Jan 19, 2015
 * Clean all plugins
 * Optimize, rewrite a part of Picasa plugin and fixed a bug while checking permission; increase session expires time to 900 seconds.
