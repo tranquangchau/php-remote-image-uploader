@@ -3,7 +3,7 @@
  * Plugin for http://postimage.org
  *
  * @release Jun 19, 2014
- * @lastupdate Jan 20, 2015
+ * @lastupdate Mar 207, 2015
  */
 class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugins_Abstract
 {
@@ -164,9 +164,7 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
      */
     private function getImageFromResult($url)
     {
-        $imageId  = $this->getMatch('#^http://post(?:img|image)\.org/\w+/([^/]+)/.*?#', $url);
-
-        if (! $imageId) {
+        if (!$this->getMatch('#^http://post(?:img|image)\.org/\w+/([^/]+)/.*?#', $url)) {
             $this->throwException('%s: Image ID not found.', __METHOD__);
         }
 
@@ -176,10 +174,19 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
 
         $imageUrl = $this->getMatch('#id="code_2".*?>(https?://\w+\.postimg\.org/\w+/\w+\.\w+)#i', $this->client);
 
+        if (!$imageUrl
+            && $url = $this->getMatch('#id="code_1".*?>(http.*?)<#i', $this->client)
+        ) {
+            // try to fetch direct link from image page
+            $this->resetHttpClient()
+                ->setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.76 Safari/537.36')
+            ->execute($url);
+
+            $imageUrl = $this->getMatch('#rel="image_src".*?href="([^"]+)"#i', $this->client);
+        }
         if (!$imageUrl) {
             $this->throwException('%s: Image URL not found.', __METHOD__);
         }
-
         return $imageUrl;
     }
 }
