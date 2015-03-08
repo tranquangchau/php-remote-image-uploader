@@ -3,7 +3,7 @@
  * Plugin for http://postimage.org
  *
  * @release Jun 19, 2014
- * @lastupdate Mar 207, 2015
+ * @lastupdate Mar 7, 2015
  */
 class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugins_Abstract
 {
@@ -178,6 +178,8 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
             && $url = $this->getMatch('#id="code_1".*?>(http.*?)<#i', $this->client)
         ) {
             // try to fetch direct link from image page
+            // tell postimage that i'm other browser
+            // don't hide result with me, lol :v
             $this->resetHttpClient()
                 ->setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.76 Safari/537.36')
             ->execute($url);
