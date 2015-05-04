@@ -7,7 +7,7 @@
  * You should run script get AUTH_TOKEN, AUTH_SECRET
  * then call setAccessToken($token, $secret) before.
  *
- * @lastupdate Jan 20, 2015
+ * @update May 04, 2015
  */
 
 class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_Abstract
@@ -219,7 +219,9 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
     protected function doUpload()
     {
         $params = $this->getParameters(array(
-            'title'          => basename($this->file),
+            // have issue with "signature" if file name have
+            // some special chars
+            // 'title'          => basename($this->file),
             'description'    => self::POWERED_BY,
             'tags'           => self::POWERED_BY,
             'is_public'      => 1,
