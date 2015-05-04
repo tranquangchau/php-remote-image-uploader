@@ -4,9 +4,8 @@
  * Register an API here: {@link https://imageshack.com/contact/api}.
  * You must login and have an API for uploading, transloading.
  *
- * @lastupdate Jan 20, 2015
+ * @update May 04, 2015
  */
-
 class ChipVN_ImageUploader_Plugins_Imageshack extends ChipVN_ImageUploader_Plugins_Abstract
 {
     const LOGIN_ENDPOINT = 'https://imageshack.com/rest_api/v2/user/login';
@@ -17,7 +16,8 @@ class ChipVN_ImageUploader_Plugins_Imageshack extends ChipVN_ImageUploader_Plugi
     /**
      * Get API endpoint URL.
      *
-     * @param  string $path
+     * @param string $path
+     *
      * @return string
      */
     protected function getApiURL($path)
@@ -81,7 +81,8 @@ class ChipVN_ImageUploader_Plugins_Imageshack extends ChipVN_ImageUploader_Plugi
     /**
      * Send request to API and get image URL.
      *
-     * @param  array  $param
+     * @param array $param
+     *
      * @return string
      *
      * @throws \Exception If have an error occured
@@ -107,12 +108,11 @@ class ChipVN_ImageUploader_Plugins_Imageshack extends ChipVN_ImageUploader_Plugi
         $this->checkHttpClientErrors(__METHOD__);
         $result = json_decode($this->client, true);
 
-        if (isset($result['error']['error_message'])) {
-            $this->throwException(__METHOD__.': '.$result['error']['error_message']); // . $this->client
-        } elseif (isset($result['result']['images'][0])) {
-            $image = $result['result']['images'][0];
 
-            return 'http://imageshack.com/a/img'.$image['server'].'/'.$image['bucket'].'/'.$image['filename'];
+        if (isset($result['error']['error_message'])) {
+            $this->throwException(__METHOD__.': '.$result['error']['error_message']);
+        } elseif (isset($result['result']['images'][0])) {
+            return 'http://'.$result['result']['images'][0]['direct_link'];
         }
 
         return false;
