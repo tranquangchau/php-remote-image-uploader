@@ -95,68 +95,74 @@ then
 To upload image to Picasa, you need to have some AlbumIds otherwise the image will be uploaded to _default_ album.
 To create new AlbumId faster, you may use echo `$uploader->addAlbum('testing 1');`
 
-    $uploader = ChipVN_ImageUploader_Manager::make('Picasa');
-    $uploader->login('your account', 'your password');
-    // you can set upload to an albumId by array of albums or an album, system will get a random album to upload
-    //$uploader->setAlbumId(array('51652569125195125', '515124156195725'));
-    //$uploader->setAlbumId('51652569125195125');
-    echo $uploader->upload(getcwd(). '/test.jpg');
-    // this plugin does not support transload image
+```php
+$uploader = ChipVN_ImageUploader_Manager::make('Picasa');
+$uploader->login('your account', 'your password');
+// you can set upload to an albumId by array of albums or an album, system will get a random album to upload
+//$uploader->setAlbumId(array('51652569125195125', '515124156195725'));
+//$uploader->setAlbumId('51652569125195125');
+echo $uploader->upload(getcwd(). '/test.jpg');
+// this plugin does not support transload image
+```
 
 ### Upload to Picasanew - ver 2 (use OAuth 2.0)
 To upload image to Picasanew, you need to have some AlbumIds otherwise the image will be uploaded to _default_ album.
 To create new AlbumId faster, you may use echo `$uploader->addAlbum('testing 1');`
 
-    $uploader = ChipVN_ImageUploader_Manager::make('Picasanew');
-    $uploader->login('your user name', ''); // we don't need password here
-    $uploader->setApi('Client ID'); // register in console.developers.google.com
-    $uploader->setSecret('Client secret');
-    // you can set upload to an albumId by array of albums or an album, system will get a random album to upload
-    //$uploader->setAlbumId(array('51652569125195125', '515124156195725'));
-    //$uploader->setAlbumId('51652569125195125');
-    if (!$uploader->hasValidToken()) {
-        $uploader->getOAuthToken('http://yourdomain.com/test.php');
-    }
-    echo $uploader->upload(getcwd(). '/test.jpg');
-    // this plugin does not support transload image
+```php
+$uploader = ChipVN_ImageUploader_Manager::make('Picasanew');
+$uploader->login('your user name', ''); // we don't need password here
+$uploader->setApi('Client ID'); // register in console.developers.google.com
+$uploader->setSecret('Client secret');
+// you can set upload to an albumId by array of albums or an album, system will get a random album to upload
+//$uploader->setAlbumId(array('51652569125195125', '515124156195725'));
+//$uploader->setAlbumId('51652569125195125');
+if (!$uploader->hasValidToken()) {
+    $uploader->getOAuthToken('http://yourdomain.com/test.php');
+}
+echo $uploader->upload(getcwd(). '/test.jpg');
+// this plugin does not support transload image
+```
 
 ### Upload to Flickr
 To upload image to Picasa, you need to have some AlbumIds otherwise the image will be uploaded to _default_ album.
 To create new AlbumId faster, you may use echo `$uploader->addAlbum('testing 1');`
-
-    $uploader = ChipVN_ImageUploader_Manager::make('Flickr');
-    $uploader->setApi('API key');
-    $uploader->setSecret('API secret');
-    $token = $uploader->getOAuthToken('http://yourdomain.com/test.php');
-    $uploader->setAccessToken($token['oauth_token'], $token['oauth_token_secret']);
-
-    echo $uploader->upload(getcwd(). '/test.jpg');
-    // this plugin does not support transload image
+```php
+$uploader = ChipVN_ImageUploader_Manager::make('Flickr');
+$uploader->setApi('API key');
+$uploader->setSecret('API secret');
+$token = $uploader->getOAuthToken('http://yourdomain.com/test.php');
+$uploader->setAccessToken($token['oauth_token'], $token['oauth_token_secret']);
+echo $uploader->upload(getcwd(). '/test.jpg');
+// this plugin does not support transload image
+```
 
 ### Upload to Imageshack
-
-    $uploader = ChipVN_ImageUploader_Manager::make('Imageshack');
-    $uploader->login('your account', 'your password');
-    $uploader->setApi('your api here');
-    echo $uploader->upload(getcwd(). '/a.jpg');
-    echo $uploader->transload('http://img33.imageshack.us/img33/6840/wz7u.jpg');
+```php
+$uploader = ChipVN_ImageUploader_Manager::make('Imageshack');
+$uploader->login('your account', 'your password');
+$uploader->setApi('your api here');
+echo $uploader->upload(getcwd(). '/a.jpg');
+echo $uploader->transload('http://img33.imageshack.us/img33/6840/wz7u.jpg');
+```
 
 ### Upload to Imgur
-
-    $uploader = ChipVN_ImageUploader_Manager::make('Imgur');
-    $uploader->setApi('your client id');
-    $uploader->setSecret('your client secret');
-    // you may upload with anonymous account but may be the image will be deleted after a period of time
-    // $uploader->login('your account here', 'your password here');
-    echo $uploader->upload(getcwd(). '/a.jpg');
-    echo $uploader->transload('http://img33.imageshack.us/img33/6840/wz7u.jpg');
+```php
+$uploader = ChipVN_ImageUploader_Manager::make('Imgur');
+$uploader->setApi('your client id');
+$uploader->setSecret('your client secret');
+// you may upload with anonymous account but may be the image will be deleted after a period of time
+// $uploader->login('your account here', 'your password here');
+echo $uploader->upload(getcwd(). '/a.jpg');
+echo $uploader->transload('http://img33.imageshack.us/img33/6840/wz7u.jpg');
+```
 
 ### Upload to Postimage
-
-    $uploader = ChipVN_ImageUploader_Manager::make('Postimage');
-    // you may upload with anonymous account but may be the image will be deleted after a period of time
-    // $uploader->login('your account here', 'your password here');
-    echo $uploader->upload(getcwd(). '/a.jpg');
-    echo $uploader->transload('http://img33.imageshack.us/img33/6840/wz7u.jpg');
-
+```php
+$uploader = ChipVN_ImageUploader_Manager::make('Postimage');
+// you may upload with anonymous account but may be the image will be deleted after a period of time
+// $uploader->login('your account here', 'your password here');
+echo $uploader->upload(getcwd(). '/a.jpg');
+echo $uploader->transload('http://img33.imageshack.us/img33/6840/wz7u.jpg');
+```
 
