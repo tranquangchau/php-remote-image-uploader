@@ -6,7 +6,7 @@ The library is free, but if you need an add-on for xenforo or web tools to uploa
 * Author:     Phan Thanh Cong <ptcong90@gmail.com>
 * Copyright:  2010-2014 Phan Thanh Cong.
 * License:    MIT
-* Version:    5.2.13
+* Version:    5.2.15
 
 ### PAID version
 * Demo: http://ptcong.com/imageuploader5
@@ -24,6 +24,10 @@ The library is free, but if you need an add-on for xenforo or web tools to uploa
     * Go to https://accounts.google.com/DisplayUnlockCaptcha, signin with your account and Enable to unlock captcha.
 
 ## Change Logs
+
+#### Version 5.2.15; May 27, 2015
+* No longer support Flickr login with accounts. Must use API
+* Add new PicasaNew uploader that use API version 2 with OAuth 2.0
 
 #### Version 5.2.14; Mar 07, 2015
 * Fix Postimage not found image url in some cases.

@@ -1,6 +1,6 @@
 <?php
 /**
- * Get API there: https://www.flickr.com/services/apps/create/noncommercial/
+ * Get API there: https://www.flickr.com/services/apps/create/noncommercial/.
  *
  * Sometimes yahoo require captcha for login,
  * the plugin can't bypass then it trigger an error message.
@@ -9,19 +9,18 @@
  *
  * @update May 04, 2015
  */
-
 class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_Abstract
 {
     const REQUEST_TOKEN_ENPOINT = 'https://www.flickr.com/services/oauth/request_token';
-    const AUTH_ENDPOINT         = 'https://www.flickr.com/services/oauth/authorize';
+    const AUTH_ENDPOINT = 'https://www.flickr.com/services/oauth/authorize';
     const ACCESS_TOKEN_ENDPOINT = 'https://www.flickr.com/services/oauth/access_token';
-    const API_ENDPOINT          = 'https://www.flickr.com/services/rest';
-    const UPLOAD_ENDPOINT       = 'https://www.flickr.com/services/upload/';
+    const API_ENDPOINT = 'https://www.flickr.com/services/rest';
+    const UPLOAD_ENDPOINT = 'https://www.flickr.com/services/upload/';
 
-    const REQUEST_OAUTH_TOKEN   = 'request_oauth_token';
-    const REQUEST_OAUTH_SECRET  = 'request_oauth_secret';
-    const ACCESS_OAUTH_TOKEN    = 'access_oauth_token';
-    const ACCESS_OAUTH_SECRET   = 'access_oauth_secret';
+    const REQUEST_OAUTH_TOKEN = 'request_oauth_token';
+    const REQUEST_OAUTH_SECRET = 'request_oauth_secret';
+    const ACCESS_OAUTH_TOKEN = 'access_oauth_token';
+    const ACCESS_OAUTH_SECRET = 'access_oauth_secret';
 
     /**
      * API secret.
@@ -45,9 +44,10 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
     protected $accessSecret;
 
     /**
-     * Set API secret
+     * Set API secret.
      *
-     * @param  string $secret
+     * @param string $secret
+     *
      * @return void
      */
     public function setSecret($secret)
@@ -58,12 +58,13 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
     /**
      * Set access token.
      *
-     * @param  string $token
+     * @param string $token
+     *
      * @return void
      */
     public function setAccessToken($token, $secret)
     {
-        $this->accessToken  = $token;
+        $this->accessToken = $token;
         $this->accessSecret = $secret;
     }
 
@@ -100,7 +101,8 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
      * This method will direct user to flickr to authorize
      * after success, flickr will direct user back to App url.
      *
-     * @param  string $callback
+     * @param string $callback
+     *
      * @return array
      */
     public function getOAuthToken($callback = 'http://ptcong.com')
@@ -121,7 +123,8 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
     /**
      * Direct user to Flickr to get authorisation.
      *
-     * @param  string $callback
+     * @param string $callback
+     *
      * @return void
      */
     protected function requestToken($callback)
@@ -129,7 +132,8 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
         $url = $this->getRequestTokenUrl($callback);
 
         if (headers_sent()) {
-            echo '<meta http-equiv="refresh" content="0; url='.$url.'"><script type="text/javascript">window.location.href = "'.$url.'";</script>';
+            echo '<meta http-equiv="refresh" content="0; url='.$url.'">'
+                .'<script type="text/javascript">window.location.href = "'.$url.'";</script>';
         } else {
             header('Location: '.$url);
         }
@@ -137,79 +141,13 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
     }
 
     /**
-     * {@inheritdoc}
+     * We use OAuth so don't need username, password
+     * for authenication.
+     *
+     * @return bool.
      */
     protected function doLogin()
     {
-        if ($this->getAccessToken()) {
-            return true;
-        }
-
-        // try to automatic bypass yahoo login form
-        $requestTokenUrl = $this->getRequestTokenUrl('http://ptcong.com');
-
-        // follow to login form
-        $formRequest = $this->createHttpClient()
-            ->setFollowRedirect(true, 3)
-        ->execute($requestTokenUrl);
-
-        $text = $formRequest;
-        $pos  = stripos($text, 'id="login_form"');
-        $form = substr($text, $pos);
-        $form = substr($form, 0, stripos($form, '</fieldset'));
-
-        // find login form fields.
-        preg_match_all('#name=(?:\'|")(.*?)(?:\'|").*?value=(?:\'|")(.*?)(?:\'|")#is', $form, $matches);
-        $params               = array_combine($matches[1], $matches[2]);
-        $params['login']      = $this->username;
-        $params['passwd']     = $this->password;
-        $params['passwd_raw'] = '';
-        $params['.save']      = '';
-        // $params['.ws']     = 1; // ajax
-        ksort($params);
-
-        // submit login form
-        $authRequest = $this->createHttpClient()
-            ->setFollowRedirect(true, 4)
-            ->setParameters($params)
-            ->setReferer($formRequest->getTarget())
-            ->setCookies($formRequest->getResponseArrayCookies())
-            ->setMethod('POST')
-        ->execute('https://login.yahoo.com/config/login');
-
-        if (!strpos($authRequest, '/services/auth/')) {
-            if (stripos($authRequest, 'Javascript enabled')) {
-                $this->throwException('%s: Yahoo detected automatic sign in and try to restrict. Please run script get AUTH_TOKEN, AUTH_SECRET then call setAccessToken($token, $secret) before.', __METHOD__);
-            }
-            print_r($authRequest);
-            $this->throwException('%s: Cannot reach the Flickr Authorization page or your account is incorrect.', __METHOD__);
-        }
-
-        // go to flickr to authorize
-        if (!$pos = strpos($text = $authRequest, '/services/oauth/authorize.gne')) {
-            $this->throwException('%s: Cannot bypass Flickr authorization.', __METHOD__);
-        }
-        $form    = substr($text, $pos);
-        $form    = substr($form, 0, strpos($form, '</form'));
-        $cookies = $authRequest->getCookies();
-
-        preg_match_all('#input.*?name="(.*?)".*?value="(.*?)"#is', $form, $matches);
-        $params = array_combine($matches[1], $matches[2]);
-
-        $this->resetHttpClient()
-            ->setCookies($cookies)
-            ->setParameters($params)
-            ->setMethod('POST')
-        ->execute('https://www.flickr.com//services/oauth/authorize.gne');
-
-        $location = $this->client->getResponseHeaders('location');
-        if (!($requestAuthToken = $this->getMatch('#oauth_token=([\w-]+)#i', $location))
-            || !($requestAuthVerifier = $this->getMatch('#oauth_verifier=([\w-]+)#i', $location))
-        ) {
-            $this->throwException('%s: Not found "oauth_token" and "oauth_verifier" .', __METHOD__);
-        }
-        $this->getOAuthAccessToken($requestAuthToken, $requestAuthVerifier);
-
         return true;
     }
 
@@ -247,7 +185,7 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
                 $this->throwException('UPLOAD_PROBLEM: "%s"', $result['oauth_problem']);
             } else {
                 $error = $this->getMatch('#code="(.+?)"#', $this->client);
-                $msg =   $this->getMatch('#msg="(.+?)"#', $this->client);
+                $msg = $this->getMatch('#msg="(.+?)"#', $this->client);
                 $this->throwException('UPLOAD_PROBLEM: "%s" (%d)', $msg, $error);
             }
         }
@@ -260,9 +198,10 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
 
     /**
      * Get photo url.
-     * {@link https://www.flickr.com/services/api/misc.urls.html}
+     * {@link https://www.flickr.com/services/api/misc.urls.html}.
      *
-     * @param  array  $info
+     * @param array $info
+     *
      * @return string
      */
     protected function getPhotoUrl(array $photo)
@@ -290,15 +229,16 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
     /**
      * Prepare oauth request data and return url, parameters.
      *
-     * @param  string $url_endpoint
-     * @param  string $method
-     * @param  array  $params
+     * @param string $url_endpoint
+     * @param string $method
+     * @param array  $params
+     *
      * @return array
      */
     protected function prepareOAuthRequestData($url_endpoint, $method = 'GET', $params = array(), $secretKey2 = null)
     {
         $baseString = $this->getBaseString($url_endpoint, $method, $params);
-        $params     = $this->pushSignature($params, $baseString, $secretKey2);
+        $params = $this->pushSignature($params, $baseString, $secretKey2);
         if ($method == 'GET') {
             $url = $url_endpoint.'?'.http_build_query($params);
         } else {
@@ -309,9 +249,10 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
     }
 
     /**
-     * Get OAuth parameters
+     * Get OAuth parameters.
      *
-     * @param  array $extraParameters
+     * @param array $extraParameters
+     *
      * @return array
      */
     protected function getParameters(array $params)
@@ -329,9 +270,10 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
     }
 
     /**
-     * Get OAuth base string
+     * Get OAuth base string.
      *
-     * @param  array  $parameters
+     * @param array $parameters
+     *
      * @return string
      */
     protected function getBaseString($url, $method, array $params)
@@ -342,9 +284,10 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
     /**
      * Push OAuth signature.
      *
-     * @param  array  $params
-     * @param  string $baseString
-     * @param  string $secretKey2
+     * @param array  $params
+     * @param string $baseString
+     * @param string $secretKey2
+     *
      * @return void
      */
     protected function pushSignature(&$params, $baseString, $secretKey2 = null)
@@ -363,7 +306,8 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
     /**
      * Get REQUEST_AUTH_TOKEN url.
      *
-     * @param  string $callback
+     * @param string $callback
+     *
      * @return string
      */
     protected function getRequestTokenUrl($callback)
@@ -386,7 +330,7 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
         $this->getCache()->set(self::REQUEST_OAUTH_TOKEN,   $result['oauth_token']);
         $this->getCache()->set(self::REQUEST_OAUTH_SECRET,  $result['oauth_token_secret']);
 
-        list($url,) = $this->prepareOAuthRequestData(self::AUTH_ENDPOINT, 'GET', array(
+        list($url, ) = $this->prepareOAuthRequestData(self::AUTH_ENDPOINT, 'GET', array(
             'oauth_token' => $result['oauth_token'],
             'perms'       => 'write',
         ));
@@ -397,9 +341,10 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
     /**
      * Call API to get access token by request auth token, auth verifier.
      *
-     * @param  string      $requestAuthToken
-     * @param  string      $requestAuthVerifier
-     * @param  null|string $secretKey2          Use REQUEST_OAUTH_SECRET if run in public to get ACCESS_TOKEN
+     * @param string      $requestAuthToken
+     * @param string      $requestAuthVerifier
+     * @param null|string $secretKey2          Use REQUEST_OAUTH_SECRET if run in public to get ACCESS_TOKEN
+     *
      * @return array
      */
     protected function getOAuthAccessToken($requestAuthToken, $requestAuthVerifier, $secretKey2 = null)
@@ -429,10 +374,11 @@ class ChipVN_ImageUploader_Plugins_Flickr extends ChipVN_ImageUploader_Plugins_A
     }
 
     /**
-     * Call Flickr OAuth API
+     * Call Flickr OAuth API.
      *
-     * @param  string $method
-     * @param  array  $params
+     * @param string $method
+     * @param array  $params
+     *
      * @return array
      *
      * @throws Exception
