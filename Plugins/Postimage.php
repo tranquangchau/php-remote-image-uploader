@@ -1,19 +1,19 @@
 <?php
 /**
- * Plugin for http://postimage.org
+ * Plugin for http://postimage.org.
  *
  * @release Jun 19, 2014
- * @lastupdate Mar 7, 2015
+ * @update May 29, 2015
  */
 class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugins_Abstract
 {
-    const FREE_UPLOAD_ENPOINT    = 'http://postimage.org/';
+    const FREE_UPLOAD_ENPOINT = 'http://postimage.org/';
     const ACCOUNT_UPLOAD_ENPOINT = 'http://postimg.org/';
 
-    const SESSION_LOGIN          = 'session_login';
+    const SESSION_LOGIN = 'session_login';
 
     /**
-     * Gets upload url endpoint
+     * Gets upload url endpoint.
      *
      * @return string
      */
@@ -59,7 +59,8 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
     protected function doUpload()
     {
         $endpoint = $this->getUrlEnpoint();
-        $time     = time();
+        $time = time() * 1000 + mt_rand(1, 999);
+        $maxFileSize = 16777216;
 
         $this->resetHttpClient();
         if ($this->useAccount) {
@@ -70,36 +71,40 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
             ->setReferer($endpoint)
             ->setParameters(array(
                 'upload'         => '@'.$this->file,
-                'session_upload' => $time,
                 'um'             => 'computer',
+                'gallery_id'     => '',
                 'forumurl'       => $endpoint,
                 'upload_error'   => '',
+                'MAX_FILE_SIZE'  => $maxFileSize,
             ))
             ->setParameters($this->getGeneralParameters())
         ->execute($endpoint);
 
-        $galleryId = (string) $this->client;
+        if (!$location = $this->client->getResponseHeaders('location')) {
+            $galleryId = (string) $this->client;
+            $this->resetHttpClient();
+            if ($this->useAccount) {
+                $this->client->setCookies($this->getCache()->get(self::SESSION_LOGIN));
+            }
+            $this->client
+                ->setReferer($endpoint)
+                ->setParameters(array(
+                    'upload[]'       => '@'.$this->file,
+                    'session_upload' => $time,
+                    'um'             => 'computer',
+                    'forumurl'       => $endpoint,
+                    'gallery_id'     => $galleryId,
+                    'upload_error'   => '',
+                    'MAX_FILE_SIZE'  => $maxFileSize
+                ))
+                ->setParameters($this->getGeneralParameters())
+            ->execute($endpoint, 'POST');
+            $this->checkHttpClientErrors(__METHOD__);
 
-        $this->resetHttpClient();
-        if ($this->useAccount) {
-            $this->client->setCookies($this->getCache()->get(self::SESSION_LOGIN));
+            $location = $this->client->getResponseHeaders('location');
         }
-        $this->client
-            ->setReferer($endpoint)
-            ->setParameters(array(
-                'upload[]'       => '',
-                'session_upload' => $time,
-                'um'             => 'computer',
-                'forumurl'       => $endpoint,
-                'gallery_id'     => $galleryId,
-                'upload_error'   => '',
-            ))
-            ->setParameters($this->getGeneralParameters())
-        ->execute($endpoint, 'POST');
 
-        $this->checkHttpClientErrors(__METHOD__);
-
-        return $this->getImageFromResult($this->client->getResponseHeaders('location'));
+        return $this->getImageFromResult($location);
     }
 
     /**
@@ -116,7 +121,6 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
         $this->client->setReferer($endpoint)
             ->setParameters(array(
                 'forumurl' => $endpoint,
-                'ui'       => $ui,
                 'um'       => 'web',
                 'url_list' => $this->url,
             ))
@@ -136,7 +140,7 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
     protected function getGeneralParameters()
     {
         $time = time() * 1000 + mt_rand(0, 999);
-        $ui   = '24__1440__900__true__?__?__'.date('d/m/Y H:i:s', $time).'__'.$this->client->getUserAgent().'__';
+        $ui = '24__1440__900__true__?__?__'.date('d/m/Y, H:i:s A', $time).'__'.$this->client->getUserAgent().'__';
 
         return array(
             'mode'    => 'local',
@@ -157,9 +161,10 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
 
     /**
      * Parse and get image url from result page.
-     * Eg: http://postimg.org/image/wvznrbllz/d5a5b291/
+     * Eg: http://postimg.org/image/wvznrbllz/d5a5b291/.
      *
-     * @param  string $url
+     * @param string $url
+     *
      * @return string
      */
     private function getImageFromResult($url)
@@ -174,9 +179,7 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
 
         $imageUrl = $this->getMatch('#id="code_2".*?>(https?://\w+\.postimg\.org/\w+/\w+\.\w+)#i', $this->client);
 
-        if (!$imageUrl
-            && $url = $this->getMatch('#id="code_1".*?>(http.*?)<#i', $this->client)
-        ) {
+        if (!$imageUrl && $url = $this->getMatch('#id="code_1".*?>(http.*?)<#i', $this->client)) {
             // try to fetch direct link from image page
             // tell postimage that i'm other browser
             // don't hide result with me, lol :v
@@ -189,6 +192,7 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
         if (!$imageUrl) {
             $this->throwException('%s: Image URL not found.', __METHOD__);
         }
+
         return $imageUrl;
     }
 }
