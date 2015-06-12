@@ -3,7 +3,7 @@
  * Plugin for http://postimage.org.
  *
  * @release Jun 19, 2014
- * @update May 29, 2015
+ * @update Jun 12, 2015
  */
 class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugins_Abstract
 {
@@ -19,7 +19,7 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
      */
     private function getUrlEnpoint()
     {
-        return $this->getCache()->has(self::SESSION_LOGIN)
+        return $this->useAccount
             ? self::ACCOUNT_UPLOAD_ENPOINT
             : self::FREE_UPLOAD_ENPOINT;
     }
@@ -31,18 +31,15 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
     {
         if (!$this->getCache()->has(self::SESSION_LOGIN)) {
             $this->resetHttpClient()
+                ->setFollowRedirect(true, 2)
                 ->setParameters(array(
                     'login'    => $this->username,
                     'password' => $this->password,
-                    'submit'   => '',
                 ))
             ->execute('http://postimage.org/profile.php', 'POST');
 
             $this->checkHttpClientErrors(__METHOD__);
-
-            if ($this->client->getResponseStatus() == 302
-                && $this->client->getResponseArrayCookies('userlogin') != 'deleted'
-            ) {
+            if (($c = $this->client->getResponseArrayCookies('userlogin')) && $c['value'] != 'deleted') {
                 $this->getCache()->set(self::SESSION_LOGIN, $this->client->getResponseArrayCookies());
             } else {
                 $this->getCache()->delete(self::SESSION_LOGIN);
@@ -59,50 +56,34 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
     protected function doUpload()
     {
         $endpoint = $this->getUrlEnpoint();
-        $time = time() * 1000 + mt_rand(1, 999);
         $maxFileSize = 16777216;
+        $galleryId = '';
 
         $this->resetHttpClient();
         if ($this->useAccount) {
             $this->client->setCookies($this->getCache()->get(self::SESSION_LOGIN));
+
+            $this->client->execute($this->getUrlEnpoint());
+            if (preg_match('#<select.*?name="gallery".*?<option value=[\'"]([^\'"]+)[\'"]#is', $this->client, $match)) {
+                $galleryId = $match[1];
+            }
         }
+
         $this->client
             ->setSubmitMultipart()
             ->setReferer($endpoint)
             ->setParameters(array(
                 'upload'         => '@'.$this->file,
                 'um'             => 'computer',
-                'gallery_id'     => '',
                 'forumurl'       => $endpoint,
+                'gallery_id'     => $galleryId,
                 'upload_error'   => '',
                 'MAX_FILE_SIZE'  => $maxFileSize,
             ))
             ->setParameters($this->getGeneralParameters())
         ->execute($endpoint);
 
-        if (!$location = $this->client->getResponseHeaders('location')) {
-            $galleryId = (string) $this->client;
-            $this->resetHttpClient();
-            if ($this->useAccount) {
-                $this->client->setCookies($this->getCache()->get(self::SESSION_LOGIN));
-            }
-            $this->client
-                ->setReferer($endpoint)
-                ->setParameters(array(
-                    'upload[]'       => '@'.$this->file,
-                    'session_upload' => $time,
-                    'um'             => 'computer',
-                    'forumurl'       => $endpoint,
-                    'gallery_id'     => $galleryId,
-                    'upload_error'   => '',
-                    'MAX_FILE_SIZE'  => $maxFileSize
-                ))
-                ->setParameters($this->getGeneralParameters())
-            ->execute($endpoint, 'POST');
-            $this->checkHttpClientErrors(__METHOD__);
-
-            $location = $this->client->getResponseHeaders('location');
-        }
+        $location = $this->client->getResponseHeaders('location');
 
         return $this->getImageFromResult($location);
     }
@@ -139,23 +120,17 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
      */
     protected function getGeneralParameters()
     {
-        $time = time() * 1000 + mt_rand(0, 999);
-        $ui = '24__1440__900__true__?__?__'.date('d/m/Y, H:i:s A', $time).'__'.$this->client->getUserAgent().'__';
-
         return array(
-            'mode'    => 'local',
-            'areaid'  => '',
-            'hash'    => '',
-            'code'    => '',
-            'content' => '',
-            'tpl'     => '.',
-            'ver'     => '',
-            'addform' => '',
-            'mforum'  => '',
-            'submit'  => 'Upload It!',
-            'ui'      => $ui,
-            'adult'   => 'no',
-            'optsize' => '0',
+            'mode'           => 'local',
+            'areaid'         => '',
+            'hash'           => '',
+            'code'           => '',
+            'content'        => '',
+            'tpl'            => '.',
+            'ver'            => '',
+            'addform'        => '',
+            'mforum'         => '',
+            'session_upload' => '',
         );
     }
 
