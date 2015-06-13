@@ -3,10 +3,12 @@
  * Plugin for http://postimage.org.
  *
  * @release Jun 19, 2014
- * @update Jun 12, 2015
+ * @update Jun 13, 2015
  */
 class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugins_Abstract
 {
+    const UPLOAD_MAX_FILE_SIZE = 16777216;
+    const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:38.0) Gecko/20100101 Firefox/38.0';
     const FREE_UPLOAD_ENPOINT = 'http://postimage.org/';
     const ACCOUNT_UPLOAD_ENPOINT = 'http://postimg.org/';
 
@@ -25,12 +27,23 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
     }
 
     /**
+     * Gets cookies if have.
+     *
+     * @return array
+     */
+    private function getCookies()
+    {
+        return $this->getCache()->get(self::SESSION_LOGIN, array());
+    }
+
+    /**
      * {@inheritdoc}
      */
     protected function doLogin()
     {
         if (!$this->getCache()->has(self::SESSION_LOGIN)) {
             $this->resetHttpClient()
+                ->setUserAgent(self::USER_AGENT)
                 ->setFollowRedirect(true, 2)
                 ->setParameters(array(
                     'login'    => $this->username,
@@ -55,37 +68,59 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
      */
     protected function doUpload()
     {
+        $cookies = $this->getCookies();
         $endpoint = $this->getUrlEnpoint();
-        $maxFileSize = 16777216;
-        $galleryId = '';
+        $params = array(
+            'upload'         => '@'.$this->file,
+            'um'             => 'computer',
+            'gallery_id'     => '',
+            'upload_error'   => '',
+            'session_upload' => time() * 1000 + mt_rand(0, 1000),
+            'MAX_FILE_SIZE'  => self::UPLOAD_MAX_FILE_SIZE,
+        );
 
-        $this->resetHttpClient();
         if ($this->useAccount) {
-            $this->client->setCookies($this->getCache()->get(self::SESSION_LOGIN));
-
-            $this->client->execute($this->getUrlEnpoint());
+            $this->resetHttpClient()
+                ->setUserAgent(self::USER_AGENT)
+                ->setCookies($cookies)
+            ->execute($endpoint);
             if (preg_match('#<select.*?name="gallery".*?<option value=[\'"]([^\'"]+)[\'"]#is', $this->client, $match)) {
-                $galleryId = $match[1];
+                $params += array('gallery' => $match[1]);
             }
         }
 
-        $this->client
-            ->setSubmitMultipart()
+        $this->resetHttpClient()
+            ->setUserAgent(self::USER_AGENT)
+            ->setCookies($cookies)
             ->setReferer($endpoint)
-            ->setParameters(array(
-                'upload'         => '@'.$this->file,
-                'um'             => 'computer',
-                'forumurl'       => $endpoint,
-                'gallery_id'     => $galleryId,
-                'upload_error'   => '',
-                'MAX_FILE_SIZE'  => $maxFileSize,
-            ))
-            ->setParameters($this->getGeneralParameters())
+            ->setSubmitMultipart()
+            ->setParameters($this->getUploadGeneralParams())
+            ->setParameters($params)
         ->execute($endpoint);
 
-        $location = $this->client->getResponseHeaders('location');
+        if (!$galleryId = $this->client->getResponseText()) {
+            $this->throwException('%s: Not found galery id.', __METHOD__);
+        }
 
-        return $this->getImageFromResult($location);
+        unset($params['upload']);
+        $params = array(
+            'upload[]'     => '',
+            'gallery_id'   => $galleryId,
+        ) + $params;
+
+        $this->resetHttpClient()
+            ->setUserAgent(self::USER_AGENT)
+            ->setCookies($this->getCache()->get(self::SESSION_LOGIN))
+            ->setFollowRedirect(true, 2) // upload -> gallery -> image
+            ->setSubmitMultipart()
+            ->setReferer($endpoint)
+            ->setParameters($this->getUploadGeneralParams())
+            ->setParameters($params)
+        ->execute($endpoint);
+
+        $this->checkHttpClientErrors(__METHOD__);
+
+        return $this->getImageFromResult($this->client);
     }
 
     /**
@@ -94,23 +129,36 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
     protected function doTransload()
     {
         $endpoint = $this->getUrlEnpoint();
+        $cookies = $this->getCookies();
+        $params = array(
+            'um'       => 'web',
+            'url_list' => $this->url,
+        );
 
-        $this->resetHttpClient();
         if ($this->useAccount) {
-            $this->client->setCookies($this->getCache()->get(self::SESSION_LOGIN));
+            $this->resetHttpClient()
+                ->setUserAgent(self::USER_AGENT)
+                ->setCookies($cookies)
+            ->execute($endpoint);
+            if (preg_match('#<select.*?name="gallery".*?<option value=[\'"]([^\'"]+)[\'"]#is', $this->client, $match)) {
+                $params += array('gallery' => $match[1]);
+            }
         }
-        $this->client->setReferer($endpoint)
+        $this->resetHttpClient()
+            ->setUserAgent(self::USER_AGENT)
+            ->setCookies($this->getCache()->get(self::SESSION_LOGIN))
+            ->setFollowRedirect(true, 1) // transload -> image
+            ->setReferer($endpoint)
+            ->setParameters($this->getUploadGeneralParams())
             ->setParameters(array(
-                'forumurl' => $endpoint,
                 'um'       => 'web',
                 'url_list' => $this->url,
             ))
-            ->setParameters($this->getGeneralParameters())
         ->execute($endpoint, 'POST');
 
         $this->checkHttpClientErrors(__METHOD__);
 
-        return $this->getImageFromResult($this->client->getResponseHeaders('location'));
+        return $this->getImageFromResult($this->client);
     }
 
     /**
@@ -118,8 +166,11 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
      *
      * @return array
      */
-    protected function getGeneralParameters()
+    private function getUploadGeneralParams()
     {
+        $endpoint = $this->getUrlEnpoint();
+        $ui = sprintf('24__1440__900__true__?__?__%s__%s__', date('m/d/Y, h:i:s A'), self::USER_AGENT);
+
         return array(
             'mode'           => 'local',
             'areaid'         => '',
@@ -130,43 +181,26 @@ class ChipVN_ImageUploader_Plugins_Postimage extends ChipVN_ImageUploader_Plugin
             'ver'            => '',
             'addform'        => '',
             'mforum'         => '',
-            'session_upload' => '',
+            'forumurl'       => $endpoint,
+            'adult'          => 'no',
+            'optsize'        => 0,
+            'ui'             => $ui
         );
     }
 
     /**
-     * Parse and get image url from result page.
-     * Eg: http://postimg.org/image/wvznrbllz/d5a5b291/.
+     * Gets image url from result.
      *
-     * @param string $url
+     * @return string image url
      *
-     * @return string
+     * @throws Exception if not found direct link
      */
-    private function getImageFromResult($url)
+    private function getImageFromResult($client)
     {
-        if (!$this->getMatch('#^http://post(?:img|image)\.org/\w+/([^/]+)/.*?#', $url)) {
-            $this->throwException('%s: Image ID not found.', __METHOD__);
+        if (!stripos($client, 'Direct Link')) {
+            $this->throwException('%s: Can\'t get image direct link.', __METHOD__);
         }
-
-        $this->resetHttpClient()
-            ->setFollowRedirect(true, 1)
-        ->execute($url);
-
-        $imageUrl = $this->getMatch('#id="code_2".*?>(https?://\w+\.postimg\.org/\w+/\w+\.\w+)#i', $this->client);
-
-        if (!$imageUrl && $url = $this->getMatch('#id="code_1".*?>(http.*?)<#i', $this->client)) {
-            // try to fetch direct link from image page
-            // tell postimage that i'm other browser
-            // don't hide result with me, lol :v
-            $this->resetHttpClient()
-                ->setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.76 Safari/537.36')
-            ->execute($url);
-
-            $imageUrl = $this->getMatch('#rel="image_src".*?href="([^"]+)"#i', $this->client);
-        }
-        if (!$imageUrl) {
-            $this->throwException('%s: Image URL not found.', __METHOD__);
-        }
+        $imageUrl = $this->getMatch('#id="code_2"[^>]*?>(http[^<]+)#', $this->client);
 
         return $imageUrl;
     }
