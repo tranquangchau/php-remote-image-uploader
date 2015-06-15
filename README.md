@@ -6,7 +6,7 @@ The library is free, but if you need an add-on for xenforo or web tools to uploa
 * Author:     Phan Thanh Cong <ptcong90@gmail.com>
 * Copyright:  2010-2014 Phan Thanh Cong.
 * License:    MIT
-* Version:    5.2.16
+* Version:    5.2.17
 
 ### PAID version
 * Demo: http://ptcong.com/imageuploader5
@@ -25,8 +25,8 @@ The library is free, but if you need an add-on for xenforo or web tools to uploa
 
 ## Change Logs
 
-#### Version 5.2.16; Mar 07, 2015
-* Fixed get error 5xx from Postimage when upload.
+#### Version 5.2.17; Jun 13, 2015
+* Postimage fully fixes
 
 #### Version 5.2.15; May 27, 2015
 * No longer support Flickr login with accounts. Must use API
