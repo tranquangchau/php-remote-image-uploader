@@ -85,7 +85,7 @@ Add require `"ptcong/php-image-uploader": "dev-master"` to _composer.json_ and r
 ###### If you don't use composer
 Download
 - https://github.com/ptcong/php-chipvn-classloader and put it to `ChipVN/ClassLoader` folder
-- https://github.com/ptcong/php-http-class and put it to `ChipVN/Http` folder
+- https://github.com/ptcong/php-http-class (2.x) and put it to `ChipVN/Http` folder
 - https://github.com/ptcong/php-cache-manager and put it to `ChipVN/Cache` folder
 
 and include the code on the top of your file:
