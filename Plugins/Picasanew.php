@@ -12,8 +12,8 @@ class ChipVN_ImageUploader_Plugins_Picasanew extends ChipVN_ImageUploader_Plugin
     const OAUTH_TOKEN_ENDPOINT = 'https://www.googleapis.com/oauth2/v3/token';
     const OAUTH_SCOPE_PICASA = 'https://picasaweb.google.com/data/';
 
-    const USER_FEED_ENDPOINT = 'https://picasaweb.google.com/data/feed/api/user/%s';
-    const ALBUM_FEED_ENPOINT = 'https://picasaweb.google.com/data/feed/api/user/%s/albumid/%s';
+    const USER_FEED_ENDPOINT = 'https://picasaweb.google.com/data/feed/api/user/default';
+    const ALBUM_FEED_ENPOINT = 'https://picasaweb.google.com/data/feed/api/user/default/albumid/%s';
 
     const OAUTH_TOKEN = 'oauth_token';
     const OAUTH_TOKEN_EXPIRES_AT = '__expires_at';
@@ -268,7 +268,7 @@ class ChipVN_ImageUploader_Plugins_Picasanew extends ChipVN_ImageUploader_Plugin
     protected function doUpload()
     {
         $this->checkValidToken(__METHOD__);
-        $endpoint = sprintf(self::ALBUM_FEED_ENPOINT, $this->username, $this->albumId).'?alt=json';
+        $endpoint = sprintf(self::ALBUM_FEED_ENPOINT, $this->albumId).'?alt=json';
 
         $this->resetHttpClient()
             ->setHeaders($this->getGeneralHeaders())
