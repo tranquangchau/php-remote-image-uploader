@@ -1,14 +1,14 @@
 <?php
 
 require '../vendor/autoload.php';
-$cacher = new Doctrine\Common\Cache\ArrayCache();
-// $cacher = new Doctrine\Common\Cache\FilesystemCache('/Volumes/Data/Work/Localhost/www/test/tmp');
+// $cacher = new Doctrine\Common\Cache\ArrayCache();
+$cacher = new Doctrine\Common\Cache\FilesystemCache('/tmp');
 
 $uploader = RemoteImageUploader\Factory::create('Imageshack', array(
     'cacher' => $cacher,
-    'api_key' => '5SQW7ZT1dec0922325c83383377e7e557d97fe7a',
-    'username' => 'gavn2015@gmail.com',
-    'password' => 'xxxx'
+    'api_key' => 'your api key',
+    'username' => 'your user name',
+    'password' => 'your password'
 ));
 
 $uploader->login();

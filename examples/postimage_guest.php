@@ -1,8 +1,8 @@
 <?php
 
 require '../vendor/autoload.php';
-$cacher = new Doctrine\Common\Cache\ArrayCache();
-// $cacher = new Doctrine\Common\Cache\FilesystemCache('/Volumes/Data/Work/Localhost/www/test/tmp');
+// $cacher = new Doctrine\Common\Cache\ArrayCache();
+$cacher = new Doctrine\Common\Cache\FilesystemCache('/tmp');
 
 $uploader = RemoteImageUploader\Factory::create('Postimage', array(
     'cacher' => $cacher

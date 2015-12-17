@@ -8,21 +8,19 @@ interface OAuth
      * Direct user to site for authorization
      * and process get access token if user have authorized.
      *
-     * @return void
-     */
-    public function authorize();
-
-    /**
-     * Request token with auth code.
-     *
-     * @param string $authCode
      * @param string $callbackUrl
      *
      * @return void
-     *
-     * @throws Exception if failure.
      */
-    public function requestToken($authCode, $callbackUrl = '');
+    public function authorize($callbackUrl = '');
+
+
+    /**
+     * Determine if user have authorized.
+     *
+     * @return boolean
+     */
+    public function isAuthorized();
 
     /**
      * Refresh token and save new information.
@@ -43,16 +41,16 @@ interface OAuth
     /**
      * Returns token information.
      *
+     * @param null|string Get token value by given key.
+     *
      * @return array
      */
-    public function getToken();
+    public function getToken($key = null);
 
     /**
      * Determine if token is expired.
      *
-     * @param array $token
-     *
      * @return boolean
      */
-    public function isExpired(array $token);
+    public function isExpired();
 }

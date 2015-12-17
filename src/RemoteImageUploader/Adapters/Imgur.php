@@ -9,6 +9,7 @@ namespace RemoteImageUploader\Adapters;
 
 use RemoteImageUploader\Factory;
 use RemoteImageUploader\Interfaces\OAuth;
+use RemoteImageUploader\Helper;
 use Exception;
 
 class Imgur extends Factory implements OAuth
@@ -37,9 +38,8 @@ class Imgur extends Factory implements OAuth
 
             // If you don't want to authorize by yourself, you can set
             // this option to `true`, it will requires `username` and `password`.
-            // But sometimes Imgur requires captcha for authorize so this option
-            // will be failed. And you need to set it to `false` and do it by
-            // yourself.
+            // But sometimes Imgur requires captcha for authorize, in that case,
+            // you need to set it to `false` and authorize by yourself.
             'auto_authorize' => false,
             'username'       => null,
             'password'       => null,
@@ -49,9 +49,9 @@ class Imgur extends Factory implements OAuth
     /**
      * {@inheritdoc}
      */
-    public function authorize()
+    public function authorize($callbackUrl = '')
     {
-        if ($this->getRefreshToken()) {
+        if ($this->isAuthorized()) {
             return;
         }
 
@@ -60,15 +60,23 @@ class Imgur extends Factory implements OAuth
             'response_type' => 'code',
             'state'         => 'RIU'
         );
-        $url = sprintf('%s?%s', self::AUTHORIZE_ENDPOINT, http_build_query($params));
+        $url = self::AUTHORIZE_ENDPOINT.'?'.http_build_query($params);
 
         if (isset($_GET['code'])) {
             $this->requestToken($_GET['code']);
         } elseif ($this['auto_authorize']) {
             $this->autoAuthorize($url);
         } else {
-            $this->redirectTo($url);
+            Helper::redirectTo($url);
         }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function isAuthorized()
+    {
+        return !!$this->getRefreshToken();
     }
 
     private function autoAuthorize($url)
@@ -79,7 +87,7 @@ class Imgur extends Factory implements OAuth
 
         $request = $this->createRequest($url)->send();
 
-        preg_match('#(?:name|id)=[\'"]allow[\'"].*?value="([^"]+)"#', $request, $match) && $allowValue = $match[1];
+        $allowValue = Helper::match('#(?:name|id)=[\'"]allow[\'"].*?value="([^"]+)"#', $request);
 
         if (empty($allowValue)) {
             throw new Exception('Auto authorize: Not found ALLOW_VALUE');
@@ -108,25 +116,18 @@ class Imgur extends Factory implements OAuth
         $this->setToken($token);
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function requestToken($authCode, $callbackUrl = '')
+
+    private function requestToken($authCode)
     {
-        $request = $this->createRequest(self::TOKEN_ENDPOINT, 'POST')
-            ->withFormParam(array(
+        $token = $this->sendTokenRequest(
+            array(
                 'code'          => $authCode,
                 'client_id'     => $this['api_key'],
                 'client_secret' => $this['api_secret'],
                 'grant_type'    => 'authorization_code'
-            ))
-            ->send();
-
-        if ($request->getResponseStatus() != 200) {
-            throw new Exception('Request token failed');
-        }
-
-        $token = json_decode($request, true);
+            ),
+            'Request token failed'
+        );
 
         $this->setToken($token);
     }
@@ -136,22 +137,30 @@ class Imgur extends Factory implements OAuth
      */
     public function refreshToken()
     {
-        $request = $this->createRequest(self::TOKEN_ENDPOINT, 'POST')
-            ->withFormParam(array(
+        $token = $this->sendTokenRequest(
+            array(
                 'refresh_token' => $this->getRefreshToken(),
                 'client_id'     => $this['api_key'],
                 'client_secret' => $this['api_secret'],
                 'grant_type'    => 'refresh_token'
-            ))
+            ),
+            'Refresh token failed'
+        );
+
+        $this->setToken($token);
+    }
+
+    private function sendTokenRequest(array $params, $errorMessage)
+    {
+        $request = $this->createRequest(self::TOKEN_ENDPOINT, 'POST')
+            ->withFormParam($params)
             ->send();
 
         if ($request->getResponseStatus() != 200) {
-            throw new Exception('Refresh token failed');
+            throw new Exception($errorMessage);
         }
 
-        $token = json_decode($request, true);
-
-        $this->setToken($token);
+        return json_decode($request, true);
     }
 
     /**
@@ -160,26 +169,43 @@ class Imgur extends Factory implements OAuth
     public function setToken(array $token)
     {
         $token = array_merge($this->getData('token', array()), $token);
-        $token[self::KEY_EXPIRES_AT] = time() + $token['expires_in'];
 
-        $this->setData('token', $token, $token['expires_in']);
-        $this->setData('refresh_token', $token['refresh_token'], 86400 * 365 * 10);
+        // in document, imgur say token will be expired in 3600 seconds,
+        // but they given 2 years in this result.
+        // And after 1 day, token be invalid ?!?!, so we should use 3600 seconds.
+        $expiresIn = min($token['expires_in'], 3600);
+        $token[self::KEY_EXPIRES_AT] = time() + $expiresIn;
+
+        $this->setData('token', $token, $expiresIn);
+
+        if (empty($this['refresh_token']) && !empty($token['refresh_token'])) {
+            // `refresh_token` don't have expires so we can use it for long time.
+            $this->setData('refresh_token', $token['refresh_token'], 86400 * 365 * 2);
+        }
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getToken()
+    public function getToken($key = null)
     {
-        return $this->getData('token', array());
+        $token = $this->getData('token', array());
+
+        if ($key !== null) {
+            return isset($token[$key]) ? $token[$key] : null;
+        }
+
+        return $token;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function isExpired(array $token)
+    public function isExpired()
     {
-        return empty($token[self::KEY_EXPIRES_AT]) || $token[self::KEY_EXPIRES_AT] < time();
+        $expiresAt = $this->getToken(self::KEY_EXPIRES_AT);
+
+        return !$expiresAt || $expiresAt < time();
     }
 
     /**
@@ -187,7 +213,18 @@ class Imgur extends Factory implements OAuth
      */
     protected function doUpload($file)
     {
-        return $this->doGuestUpload($file);
+        if (empty($this['api_key'])) {
+            return $this->doGuestUpload($file);
+        }
+
+        $this->checkAndRefreshToken();
+
+        $request = $this->createRequest(self::UPLOAD_ENPOINT, 'POST')
+            ->withHeader('Authorization', sprintf('Bearer %s', $this->getToken('access_token')))
+            ->withFormFile('image', $file)
+            ->send();
+
+        return $this->getImageUrl($request, 'Upload failed');
     }
 
     /**
@@ -195,7 +232,41 @@ class Imgur extends Factory implements OAuth
      */
     protected function doTransload($url)
     {
-        return $this->doGuestTransload($url);
+        if (empty($this['api_key'])) {
+            return $this->doGuestTransload($url);
+        }
+
+        $this->checkAndRefreshToken();
+
+        $request = $this->createRequest(self::UPLOAD_ENPOINT, 'POST')
+            ->withHeader('Authorization', sprintf('Bearer %s', $this->getToken('access_token')))
+            ->withFormParam('image', $url)
+            ->send();
+
+        return $this->getImageUrl($request, 'Transload failed');
+    }
+
+    private function checkAndRefreshToken()
+    {
+        if (empty($this['api_key']) || empty($this['api_secret'])) {
+            throw new Exception('Missing api_key, api_secret configuration.');
+        }
+
+        $this->isExpired() && $this->refreshToken();
+    }
+
+    private function getImageUrl($request, $errorMessage)
+    {
+        $result = json_decode($request, true);
+
+        if (empty($result['success'])) {
+            if (isset($result['data']['error'])) {
+                $errorMessage = $result['data']['error'];
+            }
+            throw new Exception($errorMessage);
+        }
+
+        return $result['data']['link'];
     }
 
     private function getRefreshToken()
@@ -290,10 +361,6 @@ class Imgur extends Factory implements OAuth
 
     private function getExtension($fileName)
     {
-        // bmp will be converted to jpg
-        $extension = 'jpg';
-        preg_match('#\.(gif|jpg|jpeg|png)$#i', $fileName, $match) && $extension = $match[1];
-
-        return strtolower($extension);
+        return strtolower(Helper::match('#\.(gif|jpg|jpeg|png)$#i', $fileName, 1, 'jpg'));
     }
 }

@@ -1,9 +1,8 @@
 <?php
 
 /**
- * API Key
- * All non GET requests to the api require a Imageshack api key. You may request one from here:
- * http://imageshack.us/api_request/.
+ * You must have at least one API.
+ * Register here: {@link http://imageshack.us/api_request/}
  *
  * This adapter requires the options: api_key, username, password
  */

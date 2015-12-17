@@ -10,6 +10,7 @@ namespace RemoteImageUploader\Adapters;
 
 use RemoteImageUploader\Factory;
 use RemoteImageUploader\Interfaces\Account;
+use RemoteImageUploader\Helper;
 use Exception;
 
 class Postimage extends Factory implements Account
@@ -29,7 +30,11 @@ class Postimage extends Factory implements Account
         return array_merge(parent::getOptions(), array(
             'username'   => null,
             'password'   => null,
-            // album id ?
+
+            // if you want to upload photos to specific gallery id (album id)
+            // you can use this option. You will found it in My Images menu
+            // when you logged in.
+            // http://postimg.org/my.php?gallery=GALLERY_ID
             'gallery' => null,
         ));
     }
@@ -168,12 +173,12 @@ class Postimage extends Factory implements Account
     private function getImageUrl($request)
     {
         if (!stripos($request, 'Direct Link')
-            || !preg_match('#id="code_2"[^>]*?>(http[^<]+)#', $request, $match)
+            || !$url = Helper::match('#id="code_2"[^>]*?>(http[^<]+)#', $request)
         ) {
             throw new Exception(sprintf('Not found direct link.', __METHOD__));
         }
 
-        return $match[1];
+        return $url;
     }
 
     private function getGalleryId()
@@ -188,7 +193,7 @@ class Postimage extends Factory implements Account
                     ->send();
 
                 if (preg_match_all('#\.php\?gallery=(\w+)\'#i', $request, $matches)) {
-                    $galleryList = $matches[1];
+                    $galleryList = array_unique($matches[1]);
                     $this->setData('gallerylist', $galleryList, 900);
                 }
             }

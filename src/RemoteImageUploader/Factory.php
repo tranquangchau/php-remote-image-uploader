@@ -30,6 +30,14 @@ abstract class Factory implements ArrayAccess
         'cacher'     => null,
     );
 
+    /**
+     * Create new adapter.
+     *
+     * @param string $adapter
+     * @param array  $options
+     *
+     * @return self
+     */
     public static function create($adapter, array $options = array())
     {
         $class = sprintf('\RemoteImageUploader\Adapters\%s', ucfirst($adapter));
@@ -127,8 +135,8 @@ abstract class Factory implements ArrayAccess
      * Puts data into the cache.
      * If a cache entry with the given id already exists, its data will be replaced.
      *
-     * @param string $id       The cache id.
-     * @param mixed  $data     The cache entry/data.
+     * @param string $key      The cache id.
+     * @param mixed  $value    The cache entry/data.
      * @param int    $lifeTime The lifetime in number of seconds for this cache entry.
      *                         If zero (the default), the entry never expires (although it may be deleted from the cache
      *                         to make place for other entries).
@@ -145,7 +153,7 @@ abstract class Factory implements ArrayAccess
     /**
      * Fetches an entry from the cache.
      *
-     * @param string $id The id of the cache entry to fetch.
+     * @param string $key The id of the cache entry to fetch.
      *
      * @return mixed The cached data or FALSE, if no cache entry exists for the given id.
      */
@@ -160,7 +168,7 @@ abstract class Factory implements ArrayAccess
     /**
      * Tests if an entry exists in the cache.
      *
-     * @param string $id The cache id of the entry to check for.
+     * @param string $key The cache id of the entry to check for.
      *
      * @return bool TRUE if a cache entry exists for the given cache id, FALSE otherwise.
      */
@@ -169,6 +177,26 @@ abstract class Factory implements ArrayAccess
         $key = $this->getCacheKey($key);
 
         return $this->getCacher()->contains($key);
+    }
+
+    /**
+     * Deletes a cache entry.
+     *
+     * @param string $key The cache id.
+     *
+     * @return bool TRUE if the cache entry was successfully deleted, FALSE otherwise.
+     *              Deleting a non-existing entry is considered successful.
+     */
+    protected function deleteData($key)
+    {
+        // avoid issue if scream is enabled
+        // {@link http://php.net/manual/en/intro.scream.php}
+        if (!$this->hasData($key)) {
+            return true;
+        }
+        $key = $this->getCacheKey($key);
+
+        $this->getCacher()->delete($key);
     }
 
     /**
@@ -218,7 +246,7 @@ abstract class Factory implements ArrayAccess
      */
     public function offsetSet($name, $value)
     {
-        $this->setOptions(array($name, $value));
+        $this->options[$name] = $value;
     }
 
     /**
@@ -253,24 +281,6 @@ abstract class Factory implements ArrayAccess
     public function offsetExists($name)
     {
         return isset($this->options[$name]);
-    }
-
-    /**
-     * Helper to redirect to an url.
-     *
-     * @param string $url
-     *
-     * @return void
-     */
-    protected function redirectTo($url)
-    {
-        if (headers_sent()) {
-            echo '<meta http-equiv="refresh" content="0; url='.$url.'">'
-                .'<script type="text/javascript">window.location.href = "'.$url.'";</script>';
-        } else {
-            header('Location: '.$url);
-        }
-        exit;
     }
 
     /**
