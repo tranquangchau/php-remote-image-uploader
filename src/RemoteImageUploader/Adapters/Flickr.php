@@ -38,6 +38,14 @@ class Flickr extends Factory implements OAuth
     /**
      * {@inheritdoc}
      */
+    protected function getOptionHash()
+    {
+        return md5($this['oauth_token'].$this['oauth_token_secret'].$this['api_key'].$this['api_secret']);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function authorize($callbackUrl = '')
     {
         if ($this->isAuthorized()) {

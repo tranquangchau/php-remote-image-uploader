@@ -125,10 +125,19 @@ abstract class Factory implements ArrayAccess
      */
     protected function getCacheKey($key)
     {
-        // this to allows adapters can use multiple accounts randomly
-        $hash = md5(get_called_class().$this['username'].$this['password']);
+        return md5(get_called_class().$this->getOptionHash().$key);
+    }
 
-        return sprintf('%s:%s', $hash, $key);
+    /**
+     * Hash key supports use multiple account, tokens.
+     *
+     * @param string $key
+     *
+     * @return string
+     */
+    protected function getOptionHash()
+    {
+        return md5($this['username'].$this['password'].$this['api_key'].$this['api_secret'].$this['refresh_token']);
     }
 
     /**
