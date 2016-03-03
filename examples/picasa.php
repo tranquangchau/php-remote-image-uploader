@@ -20,10 +20,6 @@ $uploader = RemoteImageUploader\Factory::create('Picasa', array(
     // if you have `refresh_token` you can set it here
     // to pass authorize action.
     'refresh_token' => null,
-
-    // if you have `refresh_token` you can set it here
-    // to pass authorize action.
-    'refresh_token' => null,
 ));
 
 $callbackUrl = 'http'.(getenv('HTTPS') == 'on' ? 's' : '').'://'.$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF'];
