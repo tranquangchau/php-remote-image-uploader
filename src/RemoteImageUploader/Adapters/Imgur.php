@@ -76,7 +76,7 @@ class Imgur extends Factory implements OAuth
      */
     public function isAuthorized()
     {
-        return !!$this->getRefreshToken();
+        return (bool) $this->getRefreshToken();
     }
 
     private function autoAuthorize($url)
@@ -108,7 +108,7 @@ class Imgur extends Factory implements OAuth
             ->send();
 
         $params = substr(strstr($request->getResponseHeaderLine('location'), '#', false), 1);
-        if ($request->getResponseStatus() == 403 || !$params) {
+        if ($request->getResponseStatus() == 403 || ! $params) {
             throw new Exception('Auto authorize failed');
         }
         parse_str($params, $token);
@@ -178,7 +178,7 @@ class Imgur extends Factory implements OAuth
 
         $this->setData('token', $token, $expiresIn);
 
-        if (empty($this['refresh_token']) && !empty($token['refresh_token'])) {
+        if (empty($this['refresh_token']) && ! empty($token['refresh_token'])) {
             // `refresh_token` don't have expires so we can use it for long time.
             $this->setData('refresh_token', $token['refresh_token'], 86400 * 365 * 2);
         }
@@ -205,7 +205,7 @@ class Imgur extends Factory implements OAuth
     {
         $expiresAt = $this->getToken(self::KEY_EXPIRES_AT);
 
-        return !$expiresAt || $expiresAt < time();
+        return ! $expiresAt || $expiresAt < time();
     }
 
     /**
@@ -219,12 +219,18 @@ class Imgur extends Factory implements OAuth
 
         $this->checkAndRefreshToken();
 
-        $request = $this->createRequest(self::UPLOAD_ENPOINT, 'POST')
-            ->withHeader('Authorization', sprintf('Bearer %s', $this->getToken('access_token')))
-            ->withFormFile('image', $file)
-            ->send();
+        try {
+            $request = $this->createRequest(self::UPLOAD_ENPOINT, 'POST')
+                ->withHeader('Authorization', sprintf('Bearer %s', $this->getToken('access_token')))
+                ->withFormFile('image', $file)
+                ->send();
 
-        return $this->getImageUrl($request, 'Upload failed');
+            return $this->getImageUrl($request, 'Upload failed');
+        } catch (Exception $e) {
+            $this->refreshToken();
+
+            throw $e;
+        }
     }
 
     /**
@@ -238,12 +244,18 @@ class Imgur extends Factory implements OAuth
 
         $this->checkAndRefreshToken();
 
-        $request = $this->createRequest(self::UPLOAD_ENPOINT, 'POST')
-            ->withHeader('Authorization', sprintf('Bearer %s', $this->getToken('access_token')))
-            ->withFormParam('image', $url)
-            ->send();
+        try {
+            $request = $this->createRequest(self::UPLOAD_ENPOINT, 'POST')
+                ->withHeader('Authorization', sprintf('Bearer %s', $this->getToken('access_token')))
+                ->withFormParam('image', $url)
+                ->send();
 
-        return $this->getImageUrl($request, 'Transload failed');
+            return $this->getImageUrl($request, 'Transload failed');
+        } catch (Exception $e) {
+            $this->refreshToken();
+
+            throw $e;
+        }
     }
 
     private function checkAndRefreshToken()
@@ -263,6 +275,7 @@ class Imgur extends Factory implements OAuth
             if (isset($result['data']['error'])) {
                 $errorMessage = $result['data']['error'];
             }
+
             throw new Exception($errorMessage);
         }
 
@@ -276,7 +289,7 @@ class Imgur extends Factory implements OAuth
 
     private function getGuestSession()
     {
-        if (!$session = $this->getData('guest_session')) {
+        if (! $session = $this->getData('guest_session')) {
             $request = $this->createRequest(self::START_SESSION_ENDPOINT)
                 ->withHeader('X-Requested-With', 'XMLHttpRequest')
                 ->withHeader('Referer', self::SITE_URL)
@@ -354,7 +367,7 @@ class Imgur extends Factory implements OAuth
         $request = $this->createRequest('http://imgur.com/upload/checkcaptcha?total_uploads=1&create_album=0')
             ->send();
         $result = json_decode($request, true);
-        if (!empty($result['data']['overLimits'])) {
+        if (! empty($result['data']['overLimits'])) {
             throw new Exception(sprintf('Guest upload over limits, please use api. %s', $request));
         }
     }
