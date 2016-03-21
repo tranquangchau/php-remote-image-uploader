@@ -23,11 +23,11 @@ class Imageshack extends Factory implements Account
      */
     public function getOptions()
     {
-        return array_merge(parent::getOptions(), array(
+        return parent::getOptions() + array(
             'api_key'  => null,
             'username' => null,
             'password' => null,
-        ));
+        );
     }
 
     /**

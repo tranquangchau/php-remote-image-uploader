@@ -27,7 +27,7 @@ class Postimage extends Factory implements Account
      */
     public function getOptions()
     {
-        return array_merge(parent::getOptions(), array(
+        return parent::getOptions() + array(
             'username'   => null,
             'password'   => null,
 
@@ -36,7 +36,7 @@ class Postimage extends Factory implements Account
             // when you logged in.
             // http://postimg.org/my.php?gallery=GALLERY_ID
             'gallery' => null,
-        ));
+        );
     }
 
     /**

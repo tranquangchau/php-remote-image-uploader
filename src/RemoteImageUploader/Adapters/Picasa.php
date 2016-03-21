@@ -29,7 +29,7 @@ class Picasa extends Factory implements OAuth
      */
     public function getOptions()
     {
-        return array_merge(parent::getOptions(), array(
+        return parent::getOptions() + array(
             'api_key'    => null, // client id
             'api_secret' => null, // client secret
 
@@ -44,7 +44,7 @@ class Picasa extends Factory implements OAuth
             // if you have `refresh_token` you can set it here
             // to pass authorize action.
             'refresh_token' => null,
-        ));
+        );
     }
 
     /**

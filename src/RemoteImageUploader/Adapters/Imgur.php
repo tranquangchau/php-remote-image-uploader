@@ -28,7 +28,7 @@ class Imgur extends Factory implements OAuth
      */
     public function getOptions()
     {
-        return array_merge(parent::getOptions(), array(
+        return parent::getOptions() + array(
             'api_key'    => null, // client id
             'api_secret' => null, // client secret
 
@@ -43,7 +43,7 @@ class Imgur extends Factory implements OAuth
             'auto_authorize' => false,
             'username'       => null,
             'password'       => null,
-        ));
+        );
     }
 
     /**

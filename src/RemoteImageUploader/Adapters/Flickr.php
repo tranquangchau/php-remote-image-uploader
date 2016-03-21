@@ -24,7 +24,7 @@ class Flickr extends Factory implements OAuth
      */
     public function getOptions()
     {
-        return array_merge(parent::getOptions(), array(
+        return parent::getOptions() + array(
             'api_key'    => null,
             'api_secret' => null,
 
@@ -32,7 +32,7 @@ class Flickr extends Factory implements OAuth
             // to the options to pass
             'oauth_token'        => null,
             'oauth_token_secret' => null,
-        ));
+        );
     }
 
     /**
