@@ -190,9 +190,15 @@ class Picasa extends Factory implements OAuth
             ->send();
 
         if ($request->getResponseStatus() != 201) {
-            if (stripos($request, 'No album found') !== false) {
+            if (preg_match('#No album found|Photo limit reached#i', $request)) {
                 $this->deleteData($albumId);
                 $this->deleteData('album_id');
+                static $retry = false;
+                if (! $retry) {
+                    $retry = true;
+
+                    return $this->doUpload($file);
+                }
             }
             throw new Exception(sprintf('Upload failed. %s', (string) $request));
         }
