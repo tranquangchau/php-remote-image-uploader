@@ -9,12 +9,6 @@ This project helps you quickly upload images to some image hosting services as P
 * http://flickr.com (API required)
 * http://imageshack.com (API required)
 
-## Plugins
-
-* Upload tools: http://code.ptcong.com/?p=10
-* XenForo add-on: http://code.ptcong.com/?p=23
-* Wordpress plugin: http://code.ptcong.com/?p=1105
-
 ## Requirements
 
 PHP needs to be a minimum version of PHP 5.3 with socket or curl enabled.
