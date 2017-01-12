@@ -280,7 +280,7 @@ class Flickr extends Factory implements OAuth
         $baseString = $this->getBaseString($endpoint, $method, $params);
         $params = $this->pushSignature($params, $baseString, $secretKey2);
         if ($method == 'GET') {
-            $url = $endpoint.'?'.http_build_query($params);
+            $url = $endpoint.'?'.http_build_query($params, null, "&", PHP_QUERY_RFC3986);
         } else {
             $url = $endpoint;
         }
@@ -324,7 +324,7 @@ class Flickr extends Factory implements OAuth
      */
     private function getBaseString($url, $method, array $params)
     {
-        return $method.'&'.urlencode($url).'&'.urlencode(http_build_query($params));
+        return $method.'&'.urlencode($url).'&'.urlencode(http_build_query($params, null, "&", PHP_QUERY_RFC3986));
     }
 
     /**
