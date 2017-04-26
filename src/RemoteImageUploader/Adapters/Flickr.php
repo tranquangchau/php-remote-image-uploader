@@ -179,7 +179,7 @@ class Flickr extends Factory implements OAuth
         }
         $result = $this->callApi('flickr.photos.getInfo', array(
             'photo_id' => $photoId,
-        ));
+        ));		
 
         return $this->getPhotoUrl($result['photo']);
     }
@@ -218,7 +218,7 @@ class Flickr extends Factory implements OAuth
      */
     protected function getPhotoUrl(array $photo)
     {
-        return strtr(
+        return array(strtr(
             'http://farm{farm-id}.staticflickr.com/{server-id}/{id}_{o-secret}_o.{o-format}',
             array(
                 '{farm-id}'   => $photo['farm'],
@@ -227,7 +227,25 @@ class Flickr extends Factory implements OAuth
                 '{o-secret}'  => $photo['originalsecret'],
                 '{o-format}'  => $photo['originalformat'],
             )
-        );
+        ),strtr(
+            'http://farm{farm-id}.staticflickr.com/{server-id}/{id}_{o-secret}_m.jpg',
+            array(
+                '{farm-id}'   => $photo['farm'],
+                '{server-id}' => $photo['server'],
+                '{id}'        => $photo['id'],
+                '{o-secret}'  => $photo['secret'],
+                '{o-format}'  => $photo['originalformat'],
+            )
+        ),strtr(
+            'http://farm{farm-id}.staticflickr.com/{server-id}/{id}_{o-secret}_n.jpg',
+            array(
+                '{farm-id}'   => $photo['farm'],
+                '{server-id}' => $photo['server'],
+                '{id}'        => $photo['id'],
+                '{o-secret}'  => $photo['secret'],
+                '{o-format}'  => $photo['originalformat'],
+            )
+        ));
     }
 
     /**
